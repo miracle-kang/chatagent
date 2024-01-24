@@ -1,0 +1,13 @@
+{{- if .Values.file.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "helm.fullname" . }}-file-storage
+spec:
+  accessModes:
+    - {{ .Values.file.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.file.persistence.size }}
+  storageClassName: {{ .Values.file.persistence.storageClass }}
+{{- end }}

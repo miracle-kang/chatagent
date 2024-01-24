@@ -1,0 +1,75 @@
+{{/*Config-server*/}}
+{{- if .Values.configserver.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "helm.configserver.fullname" . }}-test-connection"
+  labels:
+    {{- include "helm.configserver.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: [ 'wget' ]
+      args: [ '{{ include "helm.configserver.name" . }}:{{ default .Values.service.port .Values.configserver.service.port }}' ]
+  restartPolicy: Never
+{{- end }}
+---
+{{/*Identity*/}}
+{{- if .Values.identity.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "helm.identity.fullname" . }}-test-connection"
+  labels:
+    {{- include "helm.identity.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: [ 'wget' ]
+      args: [ '{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}' ]
+  restartPolicy: Never
+{{- end }}
+---
+{{/*Subscription*/}}
+{{- if .Values.subscription.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "helm.subscription.fullname" . }}-test-connection"
+  labels:
+    {{- include "helm.subscription.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: [ 'wget' ]
+      args: [ '{{ include "helm.subscription.name" . }}:{{ default .Values.service.port .Values.subscription.service.port }}' ]
+  restartPolicy: Never
+{{- end }}
+---
+{{/*Assistant*/}}
+{{- if .Values.assistant.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "helm.assistant.fullname" . }}-test-connection"
+  labels:
+    {{- include "helm.assistant.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: [ 'wget' ]
+      args: [ '{{ include "helm.assistant.name" . }}:{{ default .Values.service.port .Values.assistant.service.port }}' ]
+  restartPolicy: Never
+{{- end }}

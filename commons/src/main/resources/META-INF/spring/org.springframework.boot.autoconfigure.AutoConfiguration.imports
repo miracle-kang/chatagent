@@ -1,0 +1,5 @@
+com.miraclekang.chatgpt.common.config.WebConfig
+com.miraclekang.chatgpt.common.config.GlobalConfig
+com.miraclekang.chatgpt.common.config.SecurityConfig
+com.miraclekang.chatgpt.common.config.FeignConfiguration
+com.miraclekang.chatgpt.common.config.IdentityGeneratorConfig

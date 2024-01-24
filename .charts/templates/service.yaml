@@ -1,0 +1,75 @@
+{{/*Config server service*/}}
+{{- if .Values.configserver.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.configserver.name" . }}
+  labels:
+    {{- include "helm.configserver.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.configserver.service.type | default .Values.service.type }}
+  ports:
+    - port: {{ .Values.configserver.service.port | default .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "helm.configserver.selectorLabels" . | nindent 4 }}
+{{- end }}
+---
+{{/*Identity service*/}}
+{{- if .Values.identity.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.identity.name" . }}
+  labels:
+    {{- include "helm.identity.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.identity.service.type | default .Values.service.type }}
+  ports:
+    - port: {{ .Values.identity.service.port | default .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "helm.identity.selectorLabels" . | nindent 4 }}
+    {{- end }}
+---
+{{/*subscription service*/}}
+{{- if .Values.subscription.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.subscription.name" . }}
+  labels:
+    {{- include "helm.subscription.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.subscription.service.type | default .Values.service.type }}
+  ports:
+    - port: {{ .Values.subscription.service.port | default .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "helm.subscription.selectorLabels" . | nindent 4 }}
+{{- end }}
+---
+{{/*Assistant service*/}}
+{{- if .Values.assistant.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.assistant.name" . }}
+  labels:
+    {{- include "helm.assistant.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.assistant.service.type | default .Values.service.type }}
+  ports:
+    - port: {{ .Values.assistant.service.port | default .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "helm.assistant.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,87 @@
+{{/*Config server monitor*/}}
+{{- if and (default .Values.prometheus.enabled .Values.configserver.prometheus.enabled) .Values.configserver.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helm.configserver.fullname" . }}-monitor
+  labels:
+    {{- include "helm.configserver.labels" . | nindent 4 }}
+    {{- with (default .Values.prometheus.labels .Values.configserver.prometheus.labels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "helm.configserver.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.configserver.prometheus.path | default .Values.prometheus.path | default "/actuator/prometheus" }}
+      interval: {{ .Values.configserver.prometheus.scrapeInterval | default .Values.prometheus.scrapeInterval | default "10s" }}
+      scrapeTimeout: {{ .Values.configserver.prometheus.scrapeTimeout | default .Values.prometheus.scrapeTimeout | default "5s" }}
+{{- end }}
+---
+{{/*Identity service monitor*/}}
+{{- if and (default .Values.prometheus.enabled .Values.identity.prometheus.enabled) .Values.identity.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helm.identity.fullname" . }}-monitor
+  labels:
+    {{- include "helm.identity.labels" . | nindent 4 }}
+    {{- with (default .Values.prometheus.labels .Values.identity.prometheus.labels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "helm.identity.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.identity.prometheus.path | default .Values.prometheus.path | default "/actuator/prometheus" }}
+      interval: {{ .Values.identity.prometheus.scrapeInterval | default .Values.prometheus.scrapeInterval | default "10s" }}
+      scrapeTimeout: {{ .Values.identity.prometheus.scrapeTimeout | default .Values.prometheus.scrapeTimeout | default "5s" }}
+{{- end }}
+---
+{{/*Subscription service monitor*/}}
+{{- if and (default .Values.prometheus.enabled .Values.subscription.prometheus.enabled) .Values.subscription.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helm.subscription.fullname" . }}-monitor
+  labels:
+    {{- include "helm.subscription.labels" . | nindent 4 }}
+    {{- with (default .Values.prometheus.labels .Values.subscription.prometheus.labels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "helm.subscription.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.subscription.prometheus.path | default .Values.prometheus.path | default "/actuator/prometheus" }}
+      interval: {{ .Values.subscription.prometheus.scrapeInterval | default .Values.prometheus.scrapeInterval | default "10s" }}
+      scrapeTimeout: {{ .Values.subscription.prometheus.scrapeTimeout | default .Values.prometheus.scrapeTimeout | default "5s" }}
+{{- end }}
+---
+{{/*Assistant service monitor*/}}
+{{- if and (default .Values.prometheus.enabled .Values.assistant.prometheus.enabled) .Values.assistant.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helm.assistant.fullname" . }}-monitor
+  labels:
+    {{- include "helm.assistant.labels" . | nindent 4 }}
+    {{- with (default .Values.prometheus.labels .Values.assistant.prometheus.labels) }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "helm.assistant.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .Values.assistant.prometheus.path | default .Values.prometheus.path | default "/actuator/prometheus" }}
+      interval: {{ .Values.assistant.prometheus.scrapeInterval | default .Values.prometheus.scrapeInterval | default "10s" }}
+      scrapeTimeout: {{ .Values.assistant.prometheus.scrapeTimeout | default .Values.prometheus.scrapeTimeout | default "5s" }}
+{{- end }}

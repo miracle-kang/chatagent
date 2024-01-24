@@ -1,0 +1,119 @@
+{{/*Config-server*/}}
+{{- if and (default .Values.autoscaling.enabled .Values.configserver.autoscaling.enabled) .Values.configserver.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "helm.configserver.fullname" . }}
+  labels:
+    {{- include "helm.configserver.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "helm.configserver.fullname" . }}
+  minReplicas: {{ default .Values.autoscaling.minReplicas .Values.configserver.autoscaling.minReplicas }}
+  maxReplicas: {{ default .Values.autoscaling.maxReplicas .Values.configserver.autoscaling.maxReplicas }}
+  metrics:
+    {{- if (default .Values.autoscaling.targetCPUUtilizationPercentage .Values.configserver.autoscaling.targetCPUUtilizationPercentage) }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ default .Values.autoscaling.targetCPUUtilizationPercentage .Values.configserver.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if (default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.configserver.autoscaling.targetMemoryUtilizationPercentage) }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.configserver.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{/*Identity*/}}
+{{- if and (default .Values.autoscaling.enabled .Values.identity.autoscaling.enabled) .Values.identity.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "helm.identity.fullname" . }}
+  labels:
+    {{- include "helm.identity.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "helm.identity.fullname" . }}
+  minReplicas: {{ default .Values.autoscaling.minReplicas .Values.identity.autoscaling.minReplicas }}
+  maxReplicas: {{ default .Values.autoscaling.maxReplicas .Values.identity.autoscaling.maxReplicas }}
+  metrics:
+    {{- if (default .Values.autoscaling.targetCPUUtilizationPercentage .Values.identity.autoscaling.targetCPUUtilizationPercentage) }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ default .Values.autoscaling.targetCPUUtilizationPercentage .Values.identity.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if (default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.identity.autoscaling.targetMemoryUtilizationPercentage) }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.identity.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{/*Subscription*/}}
+{{- if and (default .Values.autoscaling.enabled .Values.subscription.autoscaling.enabled) .Values.subscription.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "helm.subscription.fullname" . }}
+  labels:
+    {{- include "helm.subscription.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "helm.subscription.fullname" . }}
+  minReplicas: {{ default .Values.autoscaling.minReplicas .Values.subscription.autoscaling.minReplicas }}
+  maxReplicas: {{ default .Values.autoscaling.maxReplicas .Values.subscription.autoscaling.maxReplicas }}
+  metrics:
+    {{- if (default .Values.autoscaling.targetCPUUtilizationPercentage .Values.subscription.autoscaling.targetCPUUtilizationPercentage) }}
+    - type: Resource
+      resource:
+      name: cpu
+      targetAverageUtilization: {{ default .Values.autoscaling.targetCPUUtilizationPercentage .Values.subscription.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if (default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.subscription.autoscaling.targetMemoryUtilizationPercentage) }}
+    - type: Resource
+      resource:
+      name: memory
+      targetAverageUtilization: {{ default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.subscription.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+---
+{{/*Assistant*/}}
+{{- if and (default .Values.autoscaling.enabled .Values.assistant.autoscaling.enabled) .Values.assistant.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "helm.assistant.fullname" . }}
+  labels:
+    {{- include "helm.assistant.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "helm.assistant.fullname" . }}
+  minReplicas: {{ default .Values.autoscaling.minReplicas .Values.assistant.autoscaling.minReplicas }}
+  maxReplicas: {{ default .Values.autoscaling.maxReplicas .Values.assistant.autoscaling.maxReplicas }}
+  metrics:
+        {{- if (default .Values.autoscaling.targetCPUUtilizationPercentage .Values.assistant.autoscaling.targetCPUUtilizationPercentage) }}
+    - type: Resource
+      resource:
+      name: cpu
+      targetAverageUtilization: {{ default .Values.autoscaling.targetCPUUtilizationPercentage .Values.assistant.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if (default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.assistant.autoscaling.targetMemoryUtilizationPercentage) }}
+    - type: Resource
+      resource:
+      name: memory
+      targetAverageUtilization: {{ default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.assistant.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

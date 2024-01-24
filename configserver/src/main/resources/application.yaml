@@ -1,0 +1,33 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+
+spring:
+  application:
+    name: configserver
+  config:
+    name: configserver
+  profiles:
+    active: git
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/miracle-kang/chatgpt
+          searchPaths: .springconfig
+    refresh:
+      enabled: false
+
+# Actuator
+management:
+  endpoint:
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: info,health,prometheus
+
+logging:
+  level:
+    org.springframework.cloud.config: debug

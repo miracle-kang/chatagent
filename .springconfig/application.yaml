@@ -1,0 +1,12 @@
+auth:
+  jwt:
+    issuer: miraclekang.com
+    expires-hours: 48
+    key: fa6Y!#2zYfdnzD#Z@USNFlQIgMROqR6aNnPeHy%Yw$9eCtOnjt
+
+# Global Logging
+logging:
+  level:
+    com.trddao: debug
+    org.flywaydb: debug
+    org.springframework.cloud.config: debug

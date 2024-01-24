@@ -1,0 +1,587 @@
+{{- $configServerUrl:= printf "http://%s:%v" (include "helm.configserver.name" .) (default .Values.service.port .Values.configserver.service.port ) }}
+{{- if .Values.configserver.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.configserver.fullname" . }}
+  labels:
+    {{- include "helm.configserver.labels" . | nindent 4 }}
+spec:
+  {{- if not (default .Values.autoscaling.enabled .Values.configserver.autoscaling.enabled) }}
+  replicas: {{ default .Values.replicaCount .Values.configserver.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "helm.configserver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with (default .Values.podAnnotations .Values.configserver.podAnnotations) }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm.configserver.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with (default .Values.imagePullSecrets .Values.configserver.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm.configserver.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml (default .Values.podSecurityContext .Values.configserver.podSecurityContext) | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-configserver
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ default .Values.image.repository .Values.configserver.image.repository }}:{{ (default .Values.image.tag .Values.configserver.image.tag) | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.configserver.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 90
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml (default .Values.resources .Values.configserver.resources) | nindent 12 }}
+          env:
+            {{- if .Values.mysql.enabled }}
+            - name: MYSQL_URL
+              value: {{ printf "mysql://%s" (.Values.mysql.host | default "mysql:3306") }}
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database | default (include "helm.configserver.name" .) }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-password
+            {{- end }}
+            {{- if .Values.redis.address }}
+            - name: REDIS_ADDRESS
+              value: {{ .Values.redis.address }}
+            {{ end }}
+            {{- if .Values.redis.password }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: redis-password
+            {{- end }}
+            {{- if .Values.auth.jwtSecret }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: jwt-secret
+            {{- end }}
+            {{- if .Values.configserver.git }}
+            - name: GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: configserver-git-username
+            - name: GIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: configserver-git-password
+
+            {{- end}}
+            # Extends environment variables
+            {{- range $name, $value := (default .Values.extEnv .Values.configserver.extEnv) }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          args:
+            - "configserver"
+            {{- with .Values.configserver.git }}
+            - "--spring.cloud.config.server.git.uri={{ .reop }}"
+            - "--spring.cloud.config.server.git.searchPath={{ .path }}"
+            {{- end }}
+            # Extends arguments
+            {{- range (default .Values.extArgs .Values.configserver.extArgs) }}
+            - {{ . }}
+            {{- end }}
+      {{- with (default .Values.nodeSelector .Values.configserver.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.affinity .Values.configserver.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.tolerations .Values.configserver.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+---
+{{- if .Values.identity.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.identity.fullname" . }}
+  labels:
+    {{- include "helm.identity.labels" . | nindent 4 }}
+spec:
+    {{- if not (default .Values.autoscaling.enabled .Values.identity.autoscaling.enabled) }}
+  replicas: {{ default .Values.replicaCount .Values.identity.replicaCount }}
+    {{- end }}
+  selector:
+    matchLabels:
+        {{- include "helm.identity.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with (default .Values.podAnnotations .Values.identity.podAnnotations) }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm.identity.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with (default .Values.imagePullSecrets .Values.identity.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm.identity.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml (default .Values.podSecurityContext .Values.identity.podSecurityContext) | nindent 8 }}
+      volumes:
+        {{- if .Values.file.persistence.enabled }}
+        - name: file-storage
+          persistentVolumeClaim:
+            claimName: {{ include "helm.fullname" . }}-file-storage
+        {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-identity
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ default .Values.image.repository .Values.identity.image.repository }}:{{ (default .Values.image.tag .Values.identity.image.tag) | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.identity.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 90
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml (default .Values.resources .Values.identity.resources) | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.file.persistence.enabled }}
+            - mountPath: /file-storage
+              name: file-storage
+            {{- end }}
+          env:
+            {{- if .Values.mysql.enabled }}
+            - name: MYSQL_URL
+              value: {{ printf "mysql://%s" (.Values.mysql.host | default "mysql:3306") }}
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database | default (include "helm.identity.name" .) }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-password
+            {{- end }}
+            {{- if .Values.redis.address }}
+            - name: REDIS_ADDRESS
+              value: {{ .Values.redis.address }}
+            {{ end }}
+            {{- if .Values.redis.password }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: redis-password
+            {{- end }}
+            {{- if .Values.thirdParty.dingtalk.token }}
+            - name: DINGTALK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: dingtalk-token
+            {{- end }}
+            {{- if .Values.thirdParty.dingtalk.secret }}
+            - name: DINGTALK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: dingtalk-secret
+            {{- end }}
+            {{- if .Values.thirdParty.openai.token }}
+            - name: OPENAI_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: openai-token
+            {{- end }}
+            {{- if .Values.mailServer.host }}
+            - name: MAILSERVER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mailServer-username
+            - name: MAILSERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mailServer-password
+            {{ end }}
+            {{- if .Values.auth.jwtSecret }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: jwt-secret
+            {{- end }}
+            # Extends environment variables
+            {{- range $name, $value := (default .Values.extEnv .Values.identity.extEnv) }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          args:
+            - "identity"
+            {{- if .Values.mailServer.host }}
+            - "--spring.mail.host={{ .Values.mailServer.host }}"
+            - "--spring.mail.port={{ .Values.mailServer.port }}"
+            - "--spring.mail.sender={{ .Values.mailServer.sender }}"
+            {{- end }}
+            - "--auth.root.auto-init={{ .Values.auth.root.autoInit }}"
+            - "--auth.root.phones={{ .Values.auth.root.phones }}"
+            - "--auth.allow-mock={{ .Values.auth.allowMock }}"
+            - "--auth.allow-cross-origin={{ .Values.auth.allowCrossOrigin }}"
+            {{- if .Values.redis.port }}
+            - "--spring.data.redis.port={{ .Values.redis.port }}"
+            {{- end }}
+            {{- if .Values.redis.database }}
+            - "--spring.data.redis.database={{ .Values.redis.database }}"
+            {{- end }}
+            - "--file.storage={{ .Values.file.storage }}"
+            - "--file.directory.storage-path=/file-storage"
+            {{- if .Values.configserver.enabled }}
+            - "--spring.cloud.config.enabled=true"
+            - "--spring.cloud.config.uri={{ $configServerUrl }}"
+            - "--spring.config.import=configserver:{{ $configServerUrl }}"
+            {{- end }}
+            {{- if .Values.subscription.enabled }}
+            - "--remote.subscription.url=http://{{ include "helm.subscription.name" . }}:{{ default .Values.service.port .Values.subscription.service.port }}"
+            {{- end }}
+            {{- if .Values.assistant.enabled }}
+            - "--remote.assistant.url=http://{{ include "helm.assistant.name" . }}:{{ default .Values.service.port .Values.assistant.service.port }}"
+            {{- end }}
+            # Extends arguments
+            {{- range (default .Values.extArgs .Values.identity.extArgs) }}
+            - {{ . }}
+            {{- end }}
+      {{- with (default .Values.nodeSelector .Values.identity.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.affinity .Values.identity.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.tolerations .Values.identity.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+---
+{{- if .Values.subscription.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.subscription.fullname" . }}
+  labels:
+    {{- include "helm.subscription.labels" . | nindent 4 }}
+spec:
+    {{- if not (default .Values.autoscaling.enabled .Values.subscription.autoscaling.enabled) }}
+  replicas: {{ default .Values.replicaCount .Values.subscription.replicaCount }}
+    {{- end }}
+  selector:
+    matchLabels:
+        {{- include "helm.subscription.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with (default .Values.podAnnotations .Values.subscription.podAnnotations) }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm.subscription.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with (default .Values.imagePullSecrets .Values.subscription.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm.subscription.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml (default .Values.podSecurityContext .Values.subscription.podSecurityContext) | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-subscription
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ default .Values.image.repository .Values.subscription.image.repository }}:{{ (default .Values.image.tag .Values.subscription.image.tag) | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.subscription.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 90
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml (default .Values.resources .Values.subscription.resources) | nindent 12 }}
+          env:
+            {{- if .Values.mysql.enabled }}
+            - name: MYSQL_URL
+              value: {{ printf "mysql://%s" (.Values.mysql.host | default "mysql:3306") }}
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database | default (include "helm.subscription.name" .) }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-password
+            {{- end }}
+            {{- if .Values.redis.address }}
+            - name: REDIS_ADDRESS
+              value: {{ .Values.redis.address }}
+            {{ end }}
+            {{- if .Values.redis.password }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: redis-password
+            {{- end }}
+            {{- if .Values.auth.jwtSecret }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: jwt-secret
+            {{- end }}
+            # Extends environment variables
+            {{- range $name, $value := (default .Values.extEnv .Values.subscription.extEnv) }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          args:
+            - "subscription"
+            {{- if .Values.redis.port }}
+            - "--spring.data.redis.port={{ .Values.redis.port }}"
+            {{- end }}
+            {{- if .Values.redis.database }}
+            - "--spring.data.redis.database={{ .Values.redis.database }}"
+            {{- end }}
+            {{- if .Values.configserver.enabled }}
+            - "--spring.cloud.config.enabled=true"
+            - "--spring.cloud.config.uri={{ $configServerUrl }}"
+            - "--spring.config.import=configserver:{{ $configServerUrl }}"
+            {{- end }}
+            {{- if .Values.identity.enabled }}
+            - "--remote.identity.url=http://{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}"
+            {{- end }}
+            {{- if .Values.assistant.enabled }}
+            - "--remote.assistant.url=http://{{ include "helm.assistant.name" . }}:{{ default .Values.service.port .Values.assistant.service.port }}"
+            {{- end }}
+            # Extends arguments
+            {{- range (default .Values.extArgs .Values.subscription.extArgs) }}
+            - {{ . }}
+            {{- end }}
+      {{- with (default .Values.nodeSelector .Values.subscription.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.affinity .Values.subscription.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.tolerations .Values.subscription.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+---
+{{- if .Values.assistant.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.assistant.fullname" . }}
+  labels:
+    {{- include "helm.assistant.labels" . | nindent 4 }}
+spec:
+    {{- if not (default .Values.autoscaling.enabled .Values.assistant.autoscaling.enabled) }}
+  replicas: {{ default .Values.replicaCount .Values.assistant.replicaCount }}
+    {{- end }}
+  selector:
+    matchLabels:
+        {{- include "helm.assistant.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with (default .Values.podAnnotations .Values.assistant.podAnnotations) }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm.assistant.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with (default .Values.imagePullSecrets .Values.assistant.imagePullSecrets) }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm.assistant.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml (default .Values.podSecurityContext .Values.assistant.podSecurityContext) | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-assistant
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ default .Values.image.repository .Values.assistant.image.repository }}:{{ (default .Values.image.tag .Values.assistant.image.tag) | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.assistant.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 90
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml (default .Values.resources .Values.assistant.resources) | nindent 12 }}
+          env:
+            {{- if .Values.mysql.enabled }}
+            - name: MYSQL_URL
+              value: {{ printf "mysql://%s" (.Values.mysql.host | default "mysql:3306") }}
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database | default (include "helm.assistant.name" .) }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: mysql-password
+            {{- end }}
+            {{- if .Values.redis.address }}
+            - name: REDIS_ADDRESS
+              value: {{ .Values.redis.address }}
+            {{ end }}
+            {{- if .Values.redis.password }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: redis-password
+            {{- end }}
+            {{- if .Values.auth.jwtSecret }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}-auth
+                  key: jwt-secret
+            {{- end }}
+            # Extends environment variables
+            {{- range $name, $value := (default .Values.extEnv .Values.assistant.extEnv) }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          args:
+            - "assistant"
+            {{- if .Values.redis.port }}
+            - "--spring.data.redis.port={{ .Values.redis.port }}"
+            {{- end }}
+            {{- if .Values.redis.database }}
+            - "--spring.data.redis.database={{ .Values.redis.database }}"
+            {{- end }}
+            {{- if .Values.configserver.enabled }}
+            - "--spring.cloud.config.enabled=true"
+            - "--spring.cloud.config.uri={{ $configServerUrl }}"
+            - "--spring.config.import=configserver:{{ $configServerUrl }}"
+            {{- end }}
+            {{- if .Values.identity.enabled }}
+            - "--remote.identity.url=http://{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}"
+            {{- end }}
+            {{- if .Values.assistant.enabled }}
+            - "--remote.subscription.url=http://{{ include "helm.subscription.name" . }}:{{ default .Values.service.port .Values.subscription.service.port }}"
+            {{- end }}
+            # Extends arguments
+            {{- range (default .Values.extArgs .Values.assistant.extArgs) }}
+            - {{ . }}
+            {{- end }}
+      {{- with (default .Values.nodeSelector .Values.assistant.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.affinity .Values.assistant.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (default .Values.tolerations .Values.assistant.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

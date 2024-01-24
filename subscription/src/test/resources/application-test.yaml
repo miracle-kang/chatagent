@@ -1,0 +1,10 @@
+spring:
+  # Datasource
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:chatgpt-subscription
+    username: root
+    password: root
+
+redis:
+  enabled: false
