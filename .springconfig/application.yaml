@@ -1,9 +1,3 @@
-auth:
-  jwt:
-    issuer: miraclekang.com
-    expires-hours: 48
-    key: fa6Y!#2zYfdnzD#Z@USNFlQIgMROqR6aNnPeHy%Yw$9eCtOnjt
-
 # Global Logging
 logging:
   level:
