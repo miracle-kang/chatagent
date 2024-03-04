@@ -18,7 +18,7 @@ Microservice architecture
 - Native-image support
 - Docker & Compose support
 - K8S support (helm)
-- CI/CD support (Github Actions)
+- CI/CD support (GitHub Actions)
 
 ### configserver
 
@@ -35,7 +35,7 @@ Common library
 - Global security configuration
 - Global access control
 - Domain-based model
-- API facade
+- Service API facade
 
 ### identity
 
@@ -67,11 +67,16 @@ ChatGPT Assistant service
 
 ### Dependencies
 
-- (for native-image) Graal VM 21
-- (normally) JVM 17+
+Requirements:
+
+- JDK 17+
 - maven 3.8+
 - docker
-- docker-compose plugin
+
+Optional:
+
+- (native-image) Graal VM 21+
+- (local) docker-compose plugin
 - (k8s) helm
 
 ### Build package
@@ -82,7 +87,7 @@ mvn clean package
 
 ### (optional) Build native-image
 
-Required Graal VM 21, and install `native-image` to your `$PATH`
+Required Graal VM 21, and install `native-image` to your `$PATH`.
 Refer to [GraalVM](https://www.graalvm.org/docs/getting-started/)
 
 ```shell
@@ -101,17 +106,44 @@ mvn -Pnative spring-boot:build-image -pl identity,subscription,assistant
 
 ### Run (docker-compose)
 
-```shell script
+```shell
 # build docker image and run
 docker-compose up -d --build
 # or using compose plugin
 docker compose up -d --build
-
 ```
 
-### Kubernetes helm support
+### Kubernetes support
 
 Helm chart base on [.chart](.charts) directory
 
 Refer to [build-dev-image.yml](.github%2Fworkflows%2Fbuild-dev-image.yml) (for develop)
 and [build-tags.yml](.github%2Fworkflows%2Fbuild-tags.yml) (for release)
+
+Build helm chart, replace the variables with your own
+```shell
+# Replace chart name and image repository
+sed -i "s/__REPLACE_CHART_NAME__/${CHART_NAME}/g" ./.charts/Chart.yaml
+sed -i "s,__REPLACE_IMAGE_NAME__,${IMAGE_REPO},g" ./.charts/values.yaml
+# Add custom helm repo
+helm repo add ${HELM_REPO} ${HELM_REPO_URL} --username ${HELM_REPO_USERNAME} --password ${HELM_REPO_PASSWORD}
+helm repo update ${HELM_REPO}
+# Install helm cm-push plugin
+helm plugin install https://github.com/chartmuseum/helm-push
+# Build & push helm chart package
+helm cm-push ./.charts ${HELM_REPO}
+# Or build & push with customized version
+helm cm-push ./.charts ${HELM_REPO} --version ${VERSION} --app-version ${APP_VERSION}
+```
+
+Customize your helm [values.yaml](.charts/values.yaml) if needed. 
+And then install helm chart to k8s, replace the variables with your own
+```shell
+# Add custom helm repo if needed
+helm repo add ${HELM_REPO} ${HELM_REPO_URL} --username ${HELM_REPO_USERNAME} --password ${HELM_REPO_PASSWORD}
+helm repo update ${HELM_REPO}
+# Install helm chart
+helm install ${RELEASE_NAME} ${HELM_REPO}/${CHART_NAME} --namespace ${NAMESPACE} --version ${VERSION}
+# Or install with customized values
+helm install ${RELEASE_NAME} ${HELM_REPO}/${CHART_NAME} --namespace ${NAMESPACE} --version ${VERSION} --values ./your-customized-values.yaml
+```

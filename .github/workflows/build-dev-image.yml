@@ -61,7 +61,7 @@ jobs:
           helm repo add ${HELM_REPO} ${{ secrets.HELM_REPO_URL }} --username ${{ secrets.HELM_USERNAME }} --password ${{ secrets.HELM_PASSWORD }}
           helm repo update ${HELM_REPO}
           echo "SHORT_COMMIT=$(echo $GITHUB_SHA | cut -c 1-6)" >> $GITHUB_ENV
-          echo "VERSION=$(bash .github/helm.sh next-rc-version ${HELM_REPO}/${CHART_NAME})" >> $GITHUB_ENV
+          echo "VERSION=$(bash .github/helm.sh next-rc ${HELM_REPO}/${CHART_NAME})" >> $GITHUB_ENV
 
       - name: Build and push image
         uses: docker/build-push-action@v5
