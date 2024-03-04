@@ -55,8 +55,6 @@ services:
     environment:
       <<: *common-environments
       JAVA_OPTS: "-Xms128m -Xmx512m"
-      GIT_USERNAME: "miracle-kang"
-      GIT_PASSWORD: "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"
     command:
       - "--spring.cloud.config.server.git.uri=https://github.com/miracle-kang/chatgpt"
       - "--spring.cloud.config.server.git.searchPath=.springconfig"
