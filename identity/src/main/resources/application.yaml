@@ -54,12 +54,12 @@ spring:
       client:
         registration:
           github:
-            client-id: fa6a49b44b73f4b29cf8
-            client-secret: d12b9fc067c167f176e7b1989a454eaea453e08f
+            client-id: github-client-id
+            client-secret: github-client-secret
             redirect-uri: "{baseUrl}/api/open/oauth2/login/{registrationId}"
           google:
-            client-id: 28492402558-clijm8d9lj10kc70pjfh4tf648mvndm3.apps.googleusercontent.com
-            client-secret: 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
+            client-id: google-client-id
+            client-secret: google-client-secret
             redirect-uri: "{baseUrl}/api/open/oauth2/login/{registrationId}"
 
   # Mail Server
@@ -68,7 +68,7 @@ spring:
     host: smtp.sendgrid.net
     port: 587
     username: apikey
-    password: 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
+    password: apipassword
     properties:
       mail:
         smtp:
