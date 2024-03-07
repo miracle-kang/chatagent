@@ -1,5 +1,8 @@
 package com.miraclekang.chatgpt.assistant.domain.model.identity;
 
+import lombok.Getter;
+
+@Getter
 public class UserInfo {
 
     private final UserId userId;
