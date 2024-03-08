@@ -70,8 +70,7 @@ ChatGPT Assistant service
 Requirements:
 
 - JDK 17+
-- maven 3.8+
-- docker
+- Docker
 
 Optional:
 
@@ -82,7 +81,7 @@ Optional:
 ### Build package
 
 ```shell script
-mvn clean package
+./mvnw clean package
 ```
 
 ### (optional) Build native-image
@@ -92,11 +91,11 @@ Refer to [GraalVM](https://www.graalvm.org/docs/getting-started/)
 
 ```shell
 # Install commons library
-mvn clean install -pl commons
+./mvnw clean install -pl commons
 # Build executable binary
-mvn -Pnative clean package -pl identity,subscription,assistant
+./mvnw -Pnative clean package -pl identity,subscription,assistant
 # Or build docker image by spring-boot plugin
-mvn -Pnative spring-boot:build-image -pl identity,subscription,assistant
+./mvnw -Pnative spring-boot:build-image -pl identity,subscription,assistant
 
 ```
 
