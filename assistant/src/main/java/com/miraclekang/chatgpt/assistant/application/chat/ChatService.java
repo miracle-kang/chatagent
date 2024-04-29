@@ -10,6 +10,7 @@ import com.miraclekang.chatgpt.assistant.domain.model.chat.*;
 import com.miraclekang.chatgpt.assistant.domain.model.equity.UserEquityCheckerProvider;
 import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
 import com.miraclekang.chatgpt.common.reactive.Requester;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -60,7 +61,8 @@ public class ChatService {
                         command.getTemperature(),
                         command.getTopP(),
                         command.getMaxTokens()))
-                .map(conversation -> ConversationDTO.of(conversationRepository.save(conversation)));
+                .flatMap(conversation -> blockingOperation(
+                        () -> ConversationDTO.of(conversationRepository.save(conversation))));
     }
 
     @Transactional
@@ -68,8 +70,8 @@ public class ChatService {
         return Requester.currentRequester()
                 .flatMap(requester -> Mono.just(new ConversationId(aConversationId))
                         .publishOn(Schedulers.boundedElastic())
-                        .map(conversationId -> conversationRepository.findByConversationIdAndOwnerUserId(
-                                conversationId, new UserId(requester.getUserId())))
+                        .flatMap(conversationId -> blockingOperation(() -> conversationRepository
+                                .findByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId()))))
                         .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not exists")))
                         .flatMap(conversation -> equityCheckerProvider.provision(requester, command.getModel())
                                 .flatMap(checker -> {
@@ -91,7 +93,8 @@ public class ChatService {
         ConversationId conversationId = new ConversationId(aConversationId);
         return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
                 .mapNotNull(Requester::getUserId)
-                .map(userId -> conversationRepository.findByConversationIdAndOwnerUserId(conversationId, new UserId(userId)))
+                .flatMap(userId -> blockingOperation(() -> conversationRepository
+                        .findByConversationIdAndOwnerUserId(conversationId, new UserId(userId))))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not exists")))
                 .map(ConversationDTO::of);
     }
@@ -100,11 +103,12 @@ public class ChatService {
         ConversationId conversationId = new ConversationId(aConversationId);
         return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
                 .mapNotNull(Requester::getUserId)
-                .map(userId -> conversationRepository.findByConversationIdAndOwnerUserId(conversationId, new UserId(userId)))
+                .flatMap(userId -> blockingOperation(() -> conversationRepository
+                        .findByConversationIdAndOwnerUserId(conversationId, new UserId(userId))))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not exists")))
-                .map(conversation -> {
+                .flatMap(conversation -> {
                     conversation.enabledSendHistory(enabled);
-                    return ConversationDTO.of(conversationRepository.save(conversation));
+                    return blockingOperation(() -> ConversationDTO.of(conversationRepository.save(conversation)));
                 });
     }
 
@@ -113,7 +117,8 @@ public class ChatService {
         ConversationId conversationId = new ConversationId(aConversationId);
         return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
                 .mapNotNull(Requester::getUserId)
-                .map(userId -> conversationRepository.findByConversationIdAndOwnerUserId(conversationId, new UserId(userId)))
+                .flatMap(userId -> blockingOperation(() -> conversationRepository
+                        .findByConversationIdAndOwnerUserId(conversationId, new UserId(userId))))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not exists")))
                 .flatMap(conversation -> Mono.just(conversation.archive())
                         .flatMap(archive -> blockingOperation(() -> {
@@ -124,28 +129,27 @@ public class ChatService {
 
     public Mono<Page<ConversationDTO>> queryConversations(Pageable pageable) {
         return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
-                .map(requester -> {
+                .flatMap(requester -> {
                     Specification<Conversation> userConversation = ((root, query, criteriaBuilder) ->
                             criteriaBuilder.equal(root.get(Conversation_.ownerUserId), new UserId(requester.getUserId())));
                     PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                             Sort.by(Conversation_.ID).descending());
 
-                    return conversationRepository.findAll(userConversation, pageRequest)
-                            .map(ConversationDTO::of);
+                    return blockingOperation(() -> conversationRepository.findAll(userConversation, pageRequest)
+                            .map(ConversationDTO::of));
                 });
     }
 
     public Flux<MessagePartialDTO> newConversationMessage(String aConversationId, NewMessageCommand command) {
         return Requester.currentRequester()
                 .flatMapMany(requester -> Mono.just(new UserId(requester.getUserId()))
-                        .publishOn(Schedulers.boundedElastic())
-                        .map(userId -> conversationRepository.findByConversationIdAndOwnerUserId(
-                                new ConversationId(aConversationId), userId))
+                        .flatMap(userId -> blockingOperation(() -> conversationRepository.findByConversationIdAndOwnerUserId(
+                                new ConversationId(aConversationId), userId)))
                         .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not found.")))
                         .flatMapMany(conversation -> Mono.just(conversation
                                         .newMessage(Message.ofUser(command.getContent())))
                                 .publishOn(Schedulers.boundedElastic())
-                                .map(conversationMessageRepository::save)
+                                .flatMap(message -> blockingOperation(() -> conversationMessageRepository.save(message)))
                                 .flatMapMany(sendingMessage -> conversation.sendMessage(messageService,
                                                 requester, sendingMessage)
                                         .publishOn(Schedulers.boundedElastic())
@@ -157,9 +161,9 @@ public class ChatService {
     public Mono<Page<MessageDTO>> queryConversationMessages(String aConversationId, Pageable pageable) {
         ConversationId conversationId = new ConversationId(aConversationId);
 
-        return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
-                .mapNotNull(requester -> conversationRepository
-                        .findByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId())))
+        return Requester.currentRequester()
+                .flatMap(requester -> blockingOperation(() -> conversationRepository
+                        .findByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId()))))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not found.")))
                 .flatMap(conversation -> conversationMessages(conversation.getConversationId(), pageable));
     }
@@ -167,9 +171,10 @@ public class ChatService {
     @Transactional
     public Mono<Void> clearConversationMessages(String aConversationId) {
         ConversationId conversationId = new ConversationId(aConversationId);
-        return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
-                .filter(requester -> conversationRepository
-                        .existsByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId())))
+        return Requester.currentRequester()
+                .flatMap(requester -> blockingOperation(() -> conversationRepository
+                        .existsByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId()))))
+                .filter(BooleanUtils::isTrue)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not found.")))
                 .flatMap(conversation -> {
                     conversationMessageRepository.clearMessages(conversationId);
@@ -185,24 +190,25 @@ public class ChatService {
         ConversationId conversationId = new ConversationId(aConversationId);
         ConversationMessageId messageId = new ConversationMessageId(aMessageId);
 
-        return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
-                .filter(requester -> conversationRepository
-                        .existsByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId())))
+        return Requester.currentRequester()
+                .flatMap(requester -> blockingOperation(() -> conversationRepository
+                        .existsByConversationIdAndOwnerUserId(conversationId, new UserId(requester.getUserId()))))
+                .filter(BooleanUtils::isTrue)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not found.")))
                 .mapNotNull(conversation -> conversationMessageRepository.conversationMessage(conversationId, messageId))
                 .flatMap(message -> blockingOperation(() -> conversationMessageRepository.delete(message)));
     }
 
     public Mono<Page<ConversationDTO>> queryConversationArchives(Pageable pageable) {
-        return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
-                .map(requester -> {
+        return Requester.currentRequester()
+                .flatMap(requester -> {
                     Specification<ConversationArchive> userConversation = ((root, query, criteriaBuilder) ->
                             criteriaBuilder.equal(root.get(ConversationArchive_.ownerUserId), new UserId(requester.getUserId())));
                     PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                             Sort.by(ConversationArchive_.ID).descending());
 
-                    return conversationArchiveRepository.findAll(userConversation, pageRequest)
-                            .map(ConversationArchiveDTO::of);
+                    return blockingOperation(() -> conversationArchiveRepository.findAll(userConversation, pageRequest)
+                            .map(ConversationArchiveDTO::of));
                 });
     }
 

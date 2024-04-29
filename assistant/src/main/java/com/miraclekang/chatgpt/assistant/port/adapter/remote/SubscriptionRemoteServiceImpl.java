@@ -3,7 +3,6 @@ package com.miraclekang.chatgpt.assistant.port.adapter.remote;
 import com.miraclekang.chatgpt.assistant.domain.model.chat.ChatModel;
 import com.miraclekang.chatgpt.assistant.domain.model.equity.*;
 import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
-import com.miraclekang.chatgpt.common.facade.ReactiveAdapterInterceptor;
 import com.miraclekang.chatgpt.common.facade.SubscriptionServiceFacade;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -21,12 +20,9 @@ public class SubscriptionRemoteServiceImpl implements UserEquityInfoService {
     }
 
     @Override
-    public Flux<UserEquityInfo> userEquities(UserId userId) {
-        return Mono.deferContextual(Mono::just)
-                .flatMap(contextView -> blockingOperation(() -> {
-                    ReactiveAdapterInterceptor.setContextView(contextView);
-                    return subscriptionServiceFacade.getUserEquities(userId.getId());
-                }))
+    public Flux<UserEquityInfo> userEquities(UserId anUserId) {
+        return Mono.just(anUserId.getId()).flatMap(uid -> blockingOperation(
+                        () -> subscriptionServiceFacade.getUserEquities(uid)))
                 .flatMapMany(Flux::fromIterable)
                 .map(equityInfoDTO -> new UserEquityInfo(
                         new UserEquityId(equityInfoDTO.getUserEquityId()),

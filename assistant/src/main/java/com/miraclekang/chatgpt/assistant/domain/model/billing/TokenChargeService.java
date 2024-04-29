@@ -11,6 +11,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+import static com.miraclekang.chatgpt.common.reactive.ReactiveUtils.blockingOperation;
+
 @Slf4j
 @Service
 public class TokenChargeService {
@@ -35,14 +37,14 @@ public class TokenChargeService {
         return Mono.just(new UserId(requester.getUserId()))
                 .flatMap(userId -> {
                     TokenAccount tokenAccount = accountProvision.provision(userId, model);
-                    return ReactiveUtils.blockingOperation(() -> tokenAccountRepository.save(tokenAccount));
+                    return blockingOperation(() -> tokenAccountRepository.save(tokenAccount));
                 })
                 .flatMap(tokenAccount -> equityCheckerProvider.provision(requester, model)
                         .flatMap(equityChecker -> {
                             TokenCharge tokenCharge = tokenAccount.chargeToken(token, equityChecker);
                             log.debug("Charged {} tokens to account {} for model {}, need to pay? {}",
                                     token.numTokens(), tokenAccount.getAccountId(), model, tokenCharge.getPaid());
-                            return ReactiveUtils.blockingOperation(() -> tokenChargeRepository.save(tokenCharge));
+                            return blockingOperation(() -> tokenChargeRepository.save(tokenCharge));
                         }));
     }
 

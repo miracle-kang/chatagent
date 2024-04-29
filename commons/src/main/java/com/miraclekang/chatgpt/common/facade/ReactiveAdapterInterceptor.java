@@ -1,14 +1,12 @@
 package com.miraclekang.chatgpt.common.facade;
 
+import com.miraclekang.chatgpt.common.reactive.Requester;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
-import io.micrometer.observation.Observation;
 import io.micrometer.tracing.TraceContext;
-import io.micrometer.tracing.handler.TracingObservationHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.util.context.ContextView;
 
 import java.util.Set;
 
@@ -31,24 +29,18 @@ public class ReactiveAdapterInterceptor implements RequestInterceptor {
             "x-b3-flags"
     );
 
-    private static final InheritableThreadLocal<ContextView>
-            contextThreadLocal = new InheritableThreadLocal<>();
-
-    public static void setContextView(ContextView contextView) {
-        contextThreadLocal.set(contextView);
-    }
-
     @Override
     public void apply(RequestTemplate template) {
 
-        ContextView contextView = contextThreadLocal.get();
-        if (contextView == null) {
+        Requester requester = Requester.blockingRequester();
+        if (requester == null) {
+            log.warn("Requester is not available, skip headers propagation");
             return;
         }
 
         // WebFlux headers
-        if (contextView.hasKey(ServerWebExchange.class)) {
-            ServerWebExchange exchange = contextView.get(ServerWebExchange.class);
+        if (requester.getExchange() != null) {
+            ServerWebExchange exchange = requester.getExchange();
             exchange.getRequest().getHeaders().forEach((k, v) -> {
                 if (HEADERS_WHITELIST.contains(k.toLowerCase())) {
                     template.header(k, v);
@@ -57,21 +49,14 @@ public class ReactiveAdapterInterceptor implements RequestInterceptor {
         }
 
         // Tracing headers
-        if (contextView.hasKey("micrometer.observation")) {
-            Observation observation = contextView.get("micrometer.observation");
-            TracingObservationHandler.TracingContext tracingContext = observation.getContextView()
-                    .get(TracingObservationHandler.TracingContext.class);
-            if (tracingContext != null) {
-                TraceContext traceContext = tracingContext.getSpan().context();
-                template.header("X-B3-TraceId", traceContext.traceId());
-                template.header("X-B3-SpanId", traceContext.spanId());
-                template.header("X-B3-ParentSpanId", traceContext.parentId());
-                template.header("X-B3-Sampled", BooleanUtils.isTrue(traceContext.sampled()) ? "1" : "0");
-                template.header("X-B3-Flags", log.isDebugEnabled() ? "1" : "0");
-            }
+        if (requester.getTraceContext() != null) {
+            TraceContext traceContext = requester.getTraceContext();
+            template.header("X-B3-TraceId", traceContext.traceId());
+            template.header("X-B3-SpanId", traceContext.spanId());
+            template.header("X-B3-ParentSpanId", traceContext.parentId());
+            template.header("X-B3-Sampled", BooleanUtils.isTrue(traceContext.sampled()) ? "1" : "0");
+            template.header("X-B3-Flags", log.isDebugEnabled() ? "1" : "0");
         }
-
         log.debug("Request to {} propagation headers: {}", template.url(), template.headers());
-        contextThreadLocal.remove();
     }
 }

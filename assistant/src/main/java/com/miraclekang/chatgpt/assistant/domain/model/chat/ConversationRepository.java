@@ -12,5 +12,5 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     Conversation findByConversationIdAndOwnerUserId(ConversationId conversationId, UserId ownerUserId);
 
-    boolean existsByConversationIdAndOwnerUserId(ConversationId conversationId, UserId ownerUserId);
+    Boolean existsByConversationIdAndOwnerUserId(ConversationId conversationId, UserId ownerUserId);
 }

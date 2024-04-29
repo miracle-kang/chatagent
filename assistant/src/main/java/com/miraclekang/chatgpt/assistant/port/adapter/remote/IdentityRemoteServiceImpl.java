@@ -1,7 +1,6 @@
 package com.miraclekang.chatgpt.assistant.port.adapter.remote;
 
 import com.miraclekang.chatgpt.assistant.domain.model.identity.*;
-import com.miraclekang.chatgpt.common.facade.ReactiveAdapterInterceptor;
 import com.miraclekang.chatgpt.common.facade.IdentityServiceFacade;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -20,11 +19,8 @@ public class IdentityRemoteServiceImpl implements UserInfoService {
     @Override
     public Mono<UserInfo> userInfo(UserId userId) {
 
-        return Mono.deferContextual(Mono::just)
-                .flatMap(contextView -> blockingOperation(() -> {
-                    ReactiveAdapterInterceptor.setContextView(contextView);
-                    return identityServiceFacade.userInfo(userId.getId());
-                }))
+        return Mono.just(userId.getId())
+                .flatMap(uid -> blockingOperation(() -> identityServiceFacade.userInfo(uid)))
                 .mapNotNull(optional -> optional.orElse(null))
                 .map(userInfoDTO -> new UserInfo(
                         new UserId(userInfoDTO.getUserId()),
@@ -44,11 +40,8 @@ public class IdentityRemoteServiceImpl implements UserInfoService {
 
     @Override
     public Mono<String> username(UserId userId) {
-        return Mono.deferContextual(Mono::just)
-                .flatMap(contextView -> blockingOperation(() -> {
-                    ReactiveAdapterInterceptor.setContextView(contextView);
-                    return identityServiceFacade.username(userId.getId());
-                }))
+        return Mono.just(userId.getId())
+                .flatMap(uid -> blockingOperation(() -> identityServiceFacade.username(uid)))
                 .mapNotNull(optional -> optional.orElse(null));
     }
 }
