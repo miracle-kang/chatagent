@@ -14,8 +14,8 @@ case $serv in
 "subscription")
   app="subscription-1.0-SNAPSHOT.jar"
   ;;
-"assistant")
-  app="assistant-1.0-SNAPSHOT.jar"
+"agent")
+  app="agent-1.0-SNAPSHOT.jar"
   ;;
 *)
   echo "Unknown argument: $1"

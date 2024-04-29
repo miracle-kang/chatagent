@@ -55,21 +55,21 @@ spec:
     {{- include "helm.subscription.selectorLabels" . | nindent 4 }}
 {{- end }}
 ---
-{{/*Assistant service*/}}
-{{- if .Values.assistant.enabled }}
+{{/*Agent service*/}}
+{{- if .Values.agent.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm.assistant.name" . }}
+  name: {{ include "helm.agent.name" . }}
   labels:
-    {{- include "helm.assistant.labels" . | nindent 4 }}
+    {{- include "helm.agent.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.assistant.service.type | default .Values.service.type }}
+  type: {{ .Values.agent.service.type | default .Values.service.type }}
   ports:
-    - port: {{ .Values.assistant.service.port | default .Values.service.port }}
+    - port: {{ .Values.agent.service.port | default .Values.service.port }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
-    {{- include "helm.assistant.selectorLabels" . | nindent 4 }}
+    {{- include "helm.agent.selectorLabels" . | nindent 4 }}
 {{- end }}

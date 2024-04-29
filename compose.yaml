@@ -90,11 +90,12 @@ services:
       - "--auth.root.auto-init=true"
       - "--auth.root.phones=${ROOT_PHONES}"
       - "--auth.allow-mock=true"
+      - "--snowflake.node-id=101"
       - "--third-party.dingtalk.token=${DINGTALK_TOKEN}"
       - "--third-party.dingtalk.secret=${DINGTALK_SECRET}"
       - "--spring.cloud.config.enabled=false"
       - "--spring.cloud.config.uri=http://configserver:8888"
-      - "--remote.assistant.url=http://assistant:8080"
+      - "--remote.agent.url=http://agent:8080"
       - "--remote.subscription.url=http://subscription:8080"
       - "--zipkin.base-url=http://zipkin:9411"
       - "--logging.level.web=debug"
@@ -122,21 +123,22 @@ services:
       REDIS_DATABASE: 1
       JAVA_OPTS: "-Xms128m -Xmx512m"
     command:
+      - "--snowflake.node-id=102"
       - "--spring.cloud.config.enabled=false"
       - "--spring.cloud.config.uri=http://configserver:8888"
       - "--remote.identity.url=http://identity:8080"
-      - "--remote.assistant.url=http://assistant:8080"
+      - "--remote.agent.url=http://agent:8080"
       - "--zipkin.base-url=http://zipkin:9411"
       - "--logging.level.web=debug"
       - "--feign.logging.level=HEADERS"
 
-  assistant:
+  agent:
     build:
       dockerfile: Dockerfile
-      context: ./assistant
+      context: ./agent
       args:
         - GIT_VERSION=${GIT_VERSION:-unspecified}
-    image: miracle/chatgpt-assistant:latest
+    image: miracle/chatgpt-agent:latest
     restart: always
     depends_on:
       - mysql
@@ -147,11 +149,12 @@ services:
     environment:
       <<: [ *common-environments, *mysql-environments, *redis-environments ]
       MYSQL_URL: "mysql://mysql:3306"
-      MYSQL_DATABASE: chatgpt-assistant
+      MYSQL_DATABASE: chatgpt-agent
       REDIS_ADDRESS: "redis://redis:6379"
       REDIS_DATABASE: 2
       JAVA_OPTS: "-Xms128m -Xmx512m"
     command:
+      - "--snowflake.node-id=102"
       - "--third-party.openai.token=${OPENAI_TOKEN}"
       - "--third-party.openai.proxy=none"
       - "--spring.cloud.config.enabled=false"

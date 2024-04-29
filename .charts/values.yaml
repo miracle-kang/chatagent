@@ -249,8 +249,8 @@ subscription:
   tolerations: [ ]
   affinity: { }
 
-# assistant service
-assistant:
+# Agent service
+agent:
   enabled: true
   replicaCount: 1
 

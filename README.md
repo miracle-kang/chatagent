@@ -55,7 +55,7 @@ Subscription & Order service
 - User equity management
 - Product & Order management
 
-### assistant
+### agent
 
 ChatGPT Assistant service
 
@@ -93,9 +93,9 @@ Refer to [GraalVM](https://www.graalvm.org/docs/getting-started/)
 # Install commons library
 ./mvnw clean install -pl commons
 # Build executable binary
-./mvnw -Pnative clean package -pl identity,subscription,assistant
+./mvnw -Pnative clean package -pl identity,subscription,agent
 # Or build docker image by spring-boot plugin
-./mvnw -Pnative spring-boot:build-image -pl identity,subscription,assistant
+./mvnw -Pnative spring-boot:build-image -pl identity,subscription,agent
 
 ```
 

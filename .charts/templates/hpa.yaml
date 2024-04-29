@@ -88,32 +88,32 @@ spec:
     {{- end }}
 {{- end }}
 ---
-{{/*Assistant*/}}
-{{- if and (default .Values.autoscaling.enabled .Values.assistant.autoscaling.enabled) .Values.assistant.enabled }}
+{{/*agent*/}}
+{{- if and (default .Values.autoscaling.enabled .Values.agent.autoscaling.enabled) .Values.agent.enabled }}
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "helm.assistant.fullname" . }}
+  name: {{ include "helm.agent.fullname" . }}
   labels:
-    {{- include "helm.assistant.labels" . | nindent 4 }}
+    {{- include "helm.agent.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "helm.assistant.fullname" . }}
-  minReplicas: {{ default .Values.autoscaling.minReplicas .Values.assistant.autoscaling.minReplicas }}
-  maxReplicas: {{ default .Values.autoscaling.maxReplicas .Values.assistant.autoscaling.maxReplicas }}
+    name: {{ include "helm.agent.fullname" . }}
+  minReplicas: {{ default .Values.autoscaling.minReplicas .Values.agent.autoscaling.minReplicas }}
+  maxReplicas: {{ default .Values.autoscaling.maxReplicas .Values.agent.autoscaling.maxReplicas }}
   metrics:
-        {{- if (default .Values.autoscaling.targetCPUUtilizationPercentage .Values.assistant.autoscaling.targetCPUUtilizationPercentage) }}
+        {{- if (default .Values.autoscaling.targetCPUUtilizationPercentage .Values.agent.autoscaling.targetCPUUtilizationPercentage) }}
     - type: Resource
       resource:
       name: cpu
-      targetAverageUtilization: {{ default .Values.autoscaling.targetCPUUtilizationPercentage .Values.assistant.autoscaling.targetCPUUtilizationPercentage }}
+      targetAverageUtilization: {{ default .Values.autoscaling.targetCPUUtilizationPercentage .Values.agent.autoscaling.targetCPUUtilizationPercentage }}
     {{- end }}
-    {{- if (default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.assistant.autoscaling.targetMemoryUtilizationPercentage) }}
+    {{- if (default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.agent.autoscaling.targetMemoryUtilizationPercentage) }}
     - type: Resource
       resource:
       name: memory
-      targetAverageUtilization: {{ default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.assistant.autoscaling.targetMemoryUtilizationPercentage }}
+      targetAverageUtilization: {{ default .Values.autoscaling.targetMemoryUtilizationPercentage .Values.agent.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
 {{- end }}

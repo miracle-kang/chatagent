@@ -10,9 +10,9 @@
 {{- /*Subscription*/}}
 {{- $subscriptionFullName := include "helm.subscription.name" . -}}
 {{- $subscriptionSvcPort := .Values.subscription.service.port | default .Values.service.port -}}
-{{- /*Assistant*/}}
-{{- $assistantFullName := include "helm.assistant.name" . -}}
-{{- $assistantSvcPort := .Values.assistant.service.port | default .Values.service.port -}}
+{{- /*agent*/}}
+{{- $assistantFullName := include "helm.agent.name" . -}}
+{{- $assistantSvcPort := .Values.agent.service.port | default .Values.service.port -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
   {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
   {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
@@ -112,9 +112,9 @@ spec:
               {{- end }}
           {{- end }}
           {{- end }}
-          {{- /*assistant rule*/}}
-          {{- if $.Values.assistant.ingress.enabled }}
-          {{- range $.Values.assistant.ingress.paths }}
+          {{- /*agent rule*/}}
+          {{- if $.Values.agent.ingress.enabled }}
+          {{- range $.Values.agent.ingress.paths }}
           - path: {{ .path }}
             {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
             pathType: {{ .pathType }}

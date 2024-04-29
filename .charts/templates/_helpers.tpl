@@ -161,33 +161,33 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the assistant service
+Create the name of the agent service
 */}}
-{{- define "helm.assistant.name" -}}
-{{- .Values.assistant.nameOverride | default (printf "%s-%s" (include "helm.name" .) "assistant") }}
+{{- define "helm.agent.name" -}}
+{{- .Values.agent.nameOverride | default (printf "%s-%s" (include "helm.name" .) "agent") }}
 {{- end }}
 
-{{- define "helm.assistant.fullname" -}}
-{{- .Values.assistant.fullnameOverride | default (printf "%s-%s" (include "helm.fullname" .) "assistant") }}
+{{- define "helm.agent.fullname" -}}
+{{- .Values.agent.fullnameOverride | default (printf "%s-%s" (include "helm.fullname" .) "agent") }}
 {{- end }}
 
-{{- define "helm.assistant.labels" -}}
+{{- define "helm.agent.labels" -}}
 helm.sh/chart: {{ include "helm.chart" . }}
-{{ include "helm.assistant.selectorLabels" . }}
+{{ include "helm.agent.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{- define "helm.assistant.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "helm.assistant.name" . }}
+{{- define "helm.agent.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm.agent.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{- define "helm.assistant.serviceAccountName" -}}
-{{- if (default .Values.serviceAccount.create .Values.assistant.serviceAccount.create) }}
-{{- default (include "helm.assistant.fullname" .) .Values.assistant.serviceAccount.name }}
+{{- define "helm.agent.serviceAccountName" -}}
+{{- if (default .Values.serviceAccount.create .Values.agent.serviceAccount.create) }}
+{{- default (include "helm.agent.fullname" .) .Values.agent.serviceAccount.name }}
 {{- else }}
 {{- include "helm.serviceAccountName" . }}
 {{- end }}

@@ -298,8 +298,8 @@ spec:
             {{- if .Values.subscription.enabled }}
             - "--remote.subscription.url=http://{{ include "helm.subscription.name" . }}:{{ default .Values.service.port .Values.subscription.service.port }}"
             {{- end }}
-            {{- if .Values.assistant.enabled }}
-            - "--remote.assistant.url=http://{{ include "helm.assistant.name" . }}:{{ default .Values.service.port .Values.assistant.service.port }}"
+            {{- if .Values.agent.enabled }}
+            - "--remote.agent.url=http://{{ include "helm.agent.name" . }}:{{ default .Values.service.port .Values.agent.service.port }}"
             {{- end }}
             # Extends arguments
             {{- range (default .Values.extArgs .Values.identity.extArgs) }}
@@ -430,8 +430,8 @@ spec:
             {{- if .Values.identity.enabled }}
             - "--remote.identity.url=http://{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}"
             {{- end }}
-            {{- if .Values.assistant.enabled }}
-            - "--remote.assistant.url=http://{{ include "helm.assistant.name" . }}:{{ default .Values.service.port .Values.assistant.service.port }}"
+            {{- if .Values.agent.enabled }}
+            - "--remote.agent.url=http://{{ include "helm.agent.name" . }}:{{ default .Values.service.port .Values.agent.service.port }}"
             {{- end }}
             # Extends arguments
             {{- range (default .Values.extArgs .Values.subscription.extArgs) }}
@@ -451,42 +451,42 @@ spec:
       {{- end }}
 {{- end }}
 ---
-{{- if .Values.assistant.enabled -}}
+{{- if .Values.agent.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "helm.assistant.fullname" . }}
+  name: {{ include "helm.agent.fullname" . }}
   labels:
-    {{- include "helm.assistant.labels" . | nindent 4 }}
+    {{- include "helm.agent.labels" . | nindent 4 }}
 spec:
-    {{- if not (default .Values.autoscaling.enabled .Values.assistant.autoscaling.enabled) }}
-  replicas: {{ default .Values.replicaCount .Values.assistant.replicaCount }}
+    {{- if not (default .Values.autoscaling.enabled .Values.agent.autoscaling.enabled) }}
+  replicas: {{ default .Values.replicaCount .Values.agent.replicaCount }}
     {{- end }}
   selector:
     matchLabels:
-        {{- include "helm.assistant.selectorLabels" . | nindent 6 }}
+        {{- include "helm.agent.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with (default .Values.podAnnotations .Values.assistant.podAnnotations) }}
+      {{- with (default .Values.podAnnotations .Values.agent.podAnnotations) }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "helm.assistant.selectorLabels" . | nindent 8 }}
+        {{- include "helm.agent.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with (default .Values.imagePullSecrets .Values.assistant.imagePullSecrets) }}
+      {{- with (default .Values.imagePullSecrets .Values.agent.imagePullSecrets) }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "helm.assistant.serviceAccountName" . }}
+      serviceAccountName: {{ include "helm.agent.serviceAccountName" . }}
       securityContext:
-        {{- toYaml (default .Values.podSecurityContext .Values.assistant.podSecurityContext) | nindent 8 }}
+        {{- toYaml (default .Values.podSecurityContext .Values.agent.podSecurityContext) | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}-assistant
+        - name: {{ .Chart.Name }}-agent
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ default .Values.image.repository .Values.assistant.image.repository }}:{{ (default .Values.image.tag .Values.assistant.image.tag) | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.assistant.image.pullPolicy }}
+          image: "{{ default .Values.image.repository .Values.agent.image.repository }}:{{ (default .Values.image.tag .Values.agent.image.tag) | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.agent.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8080
@@ -506,13 +506,13 @@ spec:
             timeoutSeconds: 10
             failureThreshold: 5
           resources:
-            {{- toYaml (default .Values.resources .Values.assistant.resources) | nindent 12 }}
+            {{- toYaml (default .Values.resources .Values.agent.resources) | nindent 12 }}
           env:
             {{- if .Values.mysql.enabled }}
             - name: MYSQL_URL
               value: {{ printf "mysql://%s" (.Values.mysql.host | default "mysql:3306") }}
             - name: MYSQL_DATABASE
-              value: {{ .Values.mysql.database | default (include "helm.assistant.name" .) }}
+              value: {{ .Values.mysql.database | default (include "helm.agent.name" .) }}
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
@@ -543,12 +543,12 @@ spec:
                   key: jwt-secret
             {{- end }}
             # Extends environment variables
-            {{- range $name, $value := (default .Values.extEnv .Values.assistant.extEnv) }}
+            {{- range $name, $value := (default .Values.extEnv .Values.agent.extEnv) }}
             - name: {{ $name }}
               value: {{ $value | quote }}
             {{- end }}
           args:
-            - "assistant"
+            - "agent"
             {{- if .Values.redis.port }}
             - "--spring.data.redis.port={{ .Values.redis.port }}"
             {{- end }}
@@ -562,22 +562,22 @@ spec:
             {{- if .Values.identity.enabled }}
             - "--remote.identity.url=http://{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}"
             {{- end }}
-            {{- if .Values.assistant.enabled }}
+            {{- if .Values.agent.enabled }}
             - "--remote.subscription.url=http://{{ include "helm.subscription.name" . }}:{{ default .Values.service.port .Values.subscription.service.port }}"
             {{- end }}
             # Extends arguments
-            {{- range (default .Values.extArgs .Values.assistant.extArgs) }}
+            {{- range (default .Values.extArgs .Values.agent.extArgs) }}
             - {{ . }}
             {{- end }}
-      {{- with (default .Values.nodeSelector .Values.assistant.nodeSelector) }}
+      {{- with (default .Values.nodeSelector .Values.agent.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with (default .Values.affinity .Values.assistant.affinity) }}
+      {{- with (default .Values.affinity .Values.agent.affinity) }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with (default .Values.tolerations .Values.assistant.tolerations) }}
+      {{- with (default .Values.tolerations .Values.agent.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

@@ -16,7 +16,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>commons</module>
-        <module>assistant</module>
+        <module>agent</module>
         <module>subscription</module>
         <module>identity</module>
         <module>configserver</module>

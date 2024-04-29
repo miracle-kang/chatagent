@@ -55,14 +55,14 @@ spec:
   restartPolicy: Never
 {{- end }}
 ---
-{{/*Assistant*/}}
-{{- if .Values.assistant.enabled }}
+{{/*Agent*/}}
+{{- if .Values.agent.enabled }}
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "helm.assistant.fullname" . }}-test-connection"
+  name: "{{ include "helm.agent.fullname" . }}-test-connection"
   labels:
-    {{- include "helm.assistant.labels" . | nindent 4 }}
+    {{- include "helm.agent.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
 spec:
@@ -70,6 +70,6 @@ spec:
     - name: wget
       image: busybox
       command: [ 'wget' ]
-      args: [ '{{ include "helm.assistant.name" . }}:{{ default .Values.service.port .Values.assistant.service.port }}' ]
+      args: [ '{{ include "helm.agent.name" . }}:{{ default .Values.service.port .Values.agent.service.port }}' ]
   restartPolicy: Never
 {{- end }}
