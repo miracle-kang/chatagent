@@ -24,6 +24,10 @@ public class UserEquityInfoController {
     @GetMapping("/user-equities")
     @Operation(summary = "Get user equities", description = "Get user equities")
     public Flux<UserEquityInfoDTO> getUserEquities(@RequestParam String userId) {
-        return userEquityInfoService.userEquities(userId);
+        return userEquityInfoService.userEquities(userId)
+                .contextWrite(context -> {
+                    System.out.println(context);
+                    return context;
+                });
     }
 }

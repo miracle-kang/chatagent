@@ -1,12 +1,14 @@
 package com.miraclekang.chatgpt.identity.port.adapter.remote;
 
+import com.miraclekang.chatgpt.common.facade.ReactiveAdapterInterceptor;
 import com.miraclekang.chatgpt.common.facade.SubscriptionServiceFacade;
-import com.miraclekang.chatgpt.common.facade.dto.UserEquityInfoDTO;
 import com.miraclekang.chatgpt.identity.domain.model.equity.*;
 import com.miraclekang.chatgpt.identity.domain.model.identity.user.UserId;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
+import static com.miraclekang.chatgpt.common.reactive.ReactiveUtils.blockingOperation;
 
 @Component
 public class SubscriptionRemoteServiceImpl implements UserEquityInfoService {
@@ -18,24 +20,29 @@ public class SubscriptionRemoteServiceImpl implements UserEquityInfoService {
     }
 
     @Override
-    public List<UserEquityInfo> userEquities(UserId userId) {
-        List<UserEquityInfoDTO> userEquities = subscriptionServiceFacade.getUserEquities(userId.getId());
-        return userEquities.stream().map(equityInfoDTO -> new UserEquityInfo(
-                new UserEquityId(equityInfoDTO.getUserEquityId()),
-                new EquityId(equityInfoDTO.getEquityType(), equityInfoDTO.getEquityId()),
-                equityInfoDTO.getEquityName(),
-                equityInfoDTO.getQuantity(),
-                equityInfoDTO.getUnit(),
-                equityInfoDTO.getEffectiveTime() == null ? null : equityInfoDTO.getEffectiveTime().toLocalDateTime(),
-                equityInfoDTO.getExpiresTime() == null ? null : equityInfoDTO.getExpiresTime().toLocalDateTime(),
-                UserEquityStatus.valueOf(equityInfoDTO.getStatus()),
-                new EquityLimitation(
-                        equityInfoDTO.getLimitation().getEffective(),
-                        equityInfoDTO.getLimitation().getMaxTokensPerMonth(),
-                        equityInfoDTO.getLimitation().getMaxTokensPerDay(),
-                        equityInfoDTO.getLimitation().getMaxTokensPerRequest(),
-                        equityInfoDTO.getLimitation().getChatModels()
-                )
-        )).toList();
+    public Flux<UserEquityInfo> userEquities(UserId userId) {
+        return Mono.deferContextual(Mono::just)
+                .flatMap(contextView -> blockingOperation(() -> {
+                    ReactiveAdapterInterceptor.setContextView(contextView);
+                    return subscriptionServiceFacade.getUserEquities(userId.getId());
+                }))
+                .flatMapMany(Flux::fromIterable)
+                .map(equityInfoDTO -> new UserEquityInfo(
+                        new UserEquityId(equityInfoDTO.getUserEquityId()),
+                        new EquityId(equityInfoDTO.getEquityType(), equityInfoDTO.getEquityId()),
+                        equityInfoDTO.getEquityName(),
+                        equityInfoDTO.getQuantity(),
+                        equityInfoDTO.getUnit(),
+                        equityInfoDTO.getEffectiveTime() == null ? null : equityInfoDTO.getEffectiveTime().toLocalDateTime(),
+                        equityInfoDTO.getExpiresTime() == null ? null : equityInfoDTO.getExpiresTime().toLocalDateTime(),
+                        UserEquityStatus.valueOf(equityInfoDTO.getStatus()),
+                        new EquityLimitation(
+                                equityInfoDTO.getLimitation().getEffective(),
+                                equityInfoDTO.getLimitation().getMaxTokensPerMonth(),
+                                equityInfoDTO.getLimitation().getMaxTokensPerDay(),
+                                equityInfoDTO.getLimitation().getMaxTokensPerRequest(),
+                                equityInfoDTO.getLimitation().getChatModels()
+                        )
+                ));
     }
 }

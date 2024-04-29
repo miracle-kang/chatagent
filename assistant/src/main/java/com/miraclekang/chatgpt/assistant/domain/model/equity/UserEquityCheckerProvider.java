@@ -1,10 +1,11 @@
 package com.miraclekang.chatgpt.assistant.domain.model.equity;
 
-import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
-import com.miraclekang.chatgpt.common.reactive.Requester;
 import com.miraclekang.chatgpt.assistant.domain.model.billing.TokenAccountProvision;
 import com.miraclekang.chatgpt.assistant.domain.model.chat.ChatModel;
+import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
+import com.miraclekang.chatgpt.common.reactive.Requester;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -20,13 +21,15 @@ public class UserEquityCheckerProvider {
         this.tokenAccountProvision = tokenAccountProvision;
     }
 
-    public UserEquityChecker provision(Requester requester, ChatModel model) {
-
-        List<UserEquityInfo> userEquityList = userEquityInfoService.userEquities(new UserId(requester.getUserId()));
-        return new UserEquityChecker(
-                userEquityList,
-                tokenAccountProvision.provision(new UserId(requester.getUserId()), model),
-                requester
-        );
+    public Mono<UserEquityChecker> provision(Requester requester, ChatModel model) {
+        return userEquityInfoService.userEquities(new UserId(requester.getUserId()))
+                .collectList()
+                .switchIfEmpty(Mono.just(List.of()))
+                .map(userEquities ->
+                        new UserEquityChecker(userEquities,
+                                tokenAccountProvision.provision(new UserId(requester.getUserId()), model),
+                                requester
+                        )
+                );
     }
 }

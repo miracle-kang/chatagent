@@ -1,5 +1,7 @@
 package com.miraclekang.chatgpt.assistant.domain.model.identity;
 
+import reactor.core.publisher.Mono;
+
 public interface UserInfoService {
 
     /**
@@ -8,7 +10,7 @@ public interface UserInfoService {
      * @param userId 用户ID
      * @return 用户信息
      */
-    UserInfo userInfo(UserId userId);
+    Mono<UserInfo> userInfo(UserId userId);
 
     /**
      * 获取用户名
@@ -16,5 +18,5 @@ public interface UserInfoService {
      * @param userId 用户ID
      * @return 用户名
      */
-    String username(UserId userId);
+    Mono<String> username(UserId userId);
 }

@@ -1,9 +1,12 @@
 package com.miraclekang.chatgpt.subscription.port.adapter.remote;
 
+import com.miraclekang.chatgpt.common.facade.ReactiveAdapterInterceptor;
 import com.miraclekang.chatgpt.common.facade.IdentityServiceFacade;
-import com.miraclekang.chatgpt.common.facade.dto.UserInfoDTO;
 import com.miraclekang.chatgpt.subscription.domain.model.identity.*;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+import static com.miraclekang.chatgpt.common.reactive.ReactiveUtils.blockingOperation;
 
 @Component
 public class IdentityRemoteServiceImpl implements UserInfoService {
@@ -15,34 +18,46 @@ public class IdentityRemoteServiceImpl implements UserInfoService {
     }
 
     @Override
-    public UserInfo userInfo(UserId userId) {
-        UserInfoDTO userInfoDTO = identityServiceFacade.userInfo(userId.getId());
-        if (userInfoDTO == null) {
-            return null;
-        }
-        return new UserInfo(
-                new UserId(userInfoDTO.getUserId()),
-                userInfoDTO.getUsername(),
-                userInfoDTO.getEmail(),
-                userInfoDTO.getPhone(),
-                UserType.valueOf(userInfoDTO.getRole()),
-                new UserProfile(
-                        userInfoDTO.getProfile().getNickname(),
-                        userInfoDTO.getProfile().getGender(),
-                        userInfoDTO.getProfile().getAvatarUrl(),
-                        userInfoDTO.getProfile().getDescription(),
-                        userInfoDTO.getProfile().getSettings()
-                )
-        );
+    public Mono<UserInfo> userInfo(UserId userId) {
+        return Mono.deferContextual(Mono::just)
+                .flatMap(contextView -> blockingOperation(() -> {
+                    ReactiveAdapterInterceptor.setContextView(contextView);
+                    return identityServiceFacade.userInfo(userId.getId());
+                }))
+                .mapNotNull(optional -> optional.orElse(null))
+                .map(userInfoDTO -> new UserInfo(
+                        new UserId(userInfoDTO.getUserId()),
+                        userInfoDTO.getUsername(),
+                        userInfoDTO.getEmail(),
+                        userInfoDTO.getPhone(),
+                        UserType.valueOf(userInfoDTO.getRole()),
+                        new UserProfile(
+                                userInfoDTO.getProfile().getNickname(),
+                                userInfoDTO.getProfile().getGender(),
+                                userInfoDTO.getProfile().getAvatarUrl(),
+                                userInfoDTO.getProfile().getDescription(),
+                                userInfoDTO.getProfile().getSettings()
+                        )
+                ));
     }
 
     @Override
-    public String username(UserId userId) {
-        return identityServiceFacade.username(userId.getId());
+    public Mono<String> username(UserId userId) {
+        return Mono.deferContextual(Mono::just)
+                .flatMap(contextView -> blockingOperation(() -> {
+                    ReactiveAdapterInterceptor.setContextView(contextView);
+                    return identityServiceFacade.username(userId.getId());
+                }))
+                .mapNotNull(optional -> optional.orElse(null));
     }
 
     @Override
-    public boolean existsByUserId(UserId userId) {
-        return identityServiceFacade.existsUser(userId.getId());
+    public Mono<Boolean> existsByUserId(UserId userId) {
+        return Mono.deferContextual(Mono::just)
+                .flatMap(contextView -> blockingOperation(() -> {
+                    ReactiveAdapterInterceptor.setContextView(contextView);
+                    return identityServiceFacade.existsUser(userId.getId());
+                }))
+                .mapNotNull(optional -> optional.orElse(null));
     }
 }

@@ -5,6 +5,7 @@ import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
 import com.miraclekang.chatgpt.common.model.IdentityGenerator;
 import com.miraclekang.chatgpt.common.reactive.Requester;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -19,25 +20,26 @@ public class ConversationProvisionService {
         this.equityCheckerProvision = equityCheckerProvision;
     }
 
-    public Conversation provisionConversation(Requester requester, String name, ChatModel model, Boolean sendHistory,
-                                              Double temperature, Double topP, Integer maxTokens) {
-        return new Conversation(
-                new ConversationId(IdentityGenerator.nextIdentity()),
-                new UserId(requester.getUserId()),
-                name,
-                model,
-                sendHistory,
-                temperature,
-                topP,
-                maxTokens,
-                null,
-                null,
-                List.of(),
-                null,
-                null,
-                null,
-                Map.of(),
-                equityCheckerProvision.provision(requester, model)
-        );
+    public Mono<Conversation> provisionConversation(Requester requester, String name, ChatModel model, Boolean sendHistory,
+                                                    Double temperature, Double topP, Integer maxTokens) {
+        return equityCheckerProvision.provision(requester, model)
+                .map(equityChecker -> new Conversation(
+                        new ConversationId(IdentityGenerator.nextIdentity()),
+                        new UserId(requester.getUserId()),
+                        name,
+                        model,
+                        sendHistory,
+                        temperature,
+                        topP,
+                        maxTokens,
+                        null,
+                        null,
+                        List.of(),
+                        null,
+                        null,
+                        null,
+                        Map.of(),
+                        equityChecker
+                ));
     }
 }

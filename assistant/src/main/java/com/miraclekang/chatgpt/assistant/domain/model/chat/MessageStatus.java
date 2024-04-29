@@ -6,6 +6,8 @@ public enum MessageStatus {
 
     Succeeded,
 
+    PartiallySucceeded,
+
     Failed,
 
     Clear,

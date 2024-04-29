@@ -3,24 +3,6 @@ server:
   forward-headers-strategy: framework
 
 spring:
-  application:
-    name: chatgpt-assistant
-  main:
-    allow-bean-definition-overriding: true
-
-  # Datasource
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:file:~/.chatgpt/assistant
-    username: root
-    password: root
-
-  # Spring Cloud Config
-  cloud:
-    config:
-      enabled: false
-      uri: http://localhost:8888
-      allow-override: true
 
   # Spring Data JPA
   jpa:
@@ -41,27 +23,6 @@ spring:
     locations: classpath:sql
     baseline-on-migrate: true
 
-
-# Actuator
-management:
-  endpoint:
-    prometheus:
-      enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: info,health,prometheus
-      cors:
-        allowed-origin-patterns: '*'
-        allow-credentials: true
-        allowed-headers: '*'
-        allowed-methods: '*'
-        max-age: 3600
-        allowed-origins:
-          - '127.0.0.1'
-  health:
-    db:
-      enabled: true
 
 # Spring Doc
 springdoc:
@@ -96,16 +57,9 @@ snowflake:
   enable: true
   node-id: 100
 
-# Redis
-redis:
-  enabled: false
-  address: redis://localhost:6379
-  database: 0
-  password: 123456
-
 # Logging
 logging:
   level:
-    com.trddao: debug
+    com.miraclekang: debug
     org.flywaydb: debug
     org.springframework.cloud.config: debug

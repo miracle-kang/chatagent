@@ -96,6 +96,6 @@ redis:
 # Logging
 logging:
   level:
-    com.trddao: debug
+    com.miraclekang: debug
     org.flywaydb: debug
     org.springframework.cloud.config: debug

@@ -62,6 +62,12 @@ public class ConversationMessage extends SoftDeleteEntity {
         this.status = MessageStatus.Succeeded;
     }
 
+    public void partialSuccess(Integer contextSize, Integer usedToken) {
+        this.contextSize = contextSize;
+        this.usedToken = usedToken;
+        this.status = MessageStatus.PartiallySucceeded;
+    }
+
     public void failed(String errorInfo) {
         this.status = MessageStatus.Failed;
         this.errorInfo = errorInfo;

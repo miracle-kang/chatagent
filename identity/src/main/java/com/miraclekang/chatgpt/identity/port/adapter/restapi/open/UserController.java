@@ -33,7 +33,11 @@ public class UserController {
     @GetMapping("/info")
     @Operation(summary = "Current user info", description = "Current user info")
     public Mono<PublicUserInfoDTO> currentUserInfo() {
-        return userService.currentUserInfo();
+        return userService.currentUserInfo()
+                .contextWrite(context -> {
+                    System.out.println(context);
+                    return context;
+                });
     }
 
     @GetMapping("/profile")

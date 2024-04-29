@@ -9,11 +9,9 @@ import com.miraclekang.chatgpt.assistant.domain.model.identity.UserInfoService;
 import com.miraclekang.chatgpt.common.reactive.Requester;
 import com.miraclekang.chatgpt.common.repo.SearchCriteria;
 import com.miraclekang.chatgpt.common.repo.SearchSpecification;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -34,12 +32,15 @@ public class TokenAccountService {
     public Mono<Page<TokenAccountDTO>> queryTokenAccounts(List<SearchCriteria> searchCriteria, Pageable pageable) {
         return Requester.currentRequester()
                 .publishOn(Schedulers.boundedElastic())
-                .map(requester -> {
+                .flatMap(requester -> {
                     PageRequest pageRequest = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                             Sort.by(TokenAccount_.LATEST_TOKEN_USED_TIME).descending());
 
-                    return tokenAccountRepository.findAll(SearchSpecification.allOf(searchCriteria), pageRequest)
-                            .map(this::toDTO);
+                    Page<TokenAccount> page = tokenAccountRepository.findAll(SearchSpecification.allOf(searchCriteria), pageRequest);
+
+                    return Flux.fromIterable(page.getContent()).flatMap(this::toDTO)
+                            .collectList()
+                            .map(tokenAccountDTOs -> new PageImpl<>(tokenAccountDTOs, page.getPageable(), page.getTotalElements()));
                 });
     }
 
@@ -47,20 +48,21 @@ public class TokenAccountService {
         return Mono.just(new TokenAccountId(anAccountId))
                 .mapNotNull(tokenAccountRepository::findByAccountId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Token account not found")))
-                .map(this::toDTO);
+                .flatMap(this::toDTO);
     }
 
-    public TokenAccountDTO toDTO(TokenAccount tokenAccount) {
-        String username = userInfoService.username(tokenAccount.getOwnerUserId());
-        return new TokenAccountDTO(
-                tokenAccount.getAccountId().getId(),
-                tokenAccount.getOwnerUserId().toString(),
-                username,
-                tokenAccount.getModel(),
-                tokenAccount.getTotalTokens(),
-                tokenAccount.getPaidTokens(),
-                tokenAccount.getLatestTokenUsedTime(),
-                tokenAccount.tokenUsage()
-        );
+    public Mono<TokenAccountDTO> toDTO(TokenAccount tokenAccount) {
+        return userInfoService.username(tokenAccount.getOwnerUserId())
+                .switchIfEmpty(Mono.just("Unknown"))
+                .map(username -> new TokenAccountDTO(
+                        tokenAccount.getAccountId().getId(),
+                        tokenAccount.getOwnerUserId().toString(),
+                        username,
+                        tokenAccount.getModel(),
+                        tokenAccount.getTotalTokens(),
+                        tokenAccount.getPaidTokens(),
+                        tokenAccount.getLatestTokenUsedTime(),
+                        tokenAccount.tokenUsage()
+                ));
     }
 }

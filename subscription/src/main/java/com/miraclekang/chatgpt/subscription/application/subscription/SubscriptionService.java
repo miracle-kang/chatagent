@@ -1,13 +1,13 @@
 package com.miraclekang.chatgpt.subscription.application.subscription;
 
-import com.miraclekang.chatgpt.subscription.application.equity.command.GrantToUserCommand;
-import com.miraclekang.chatgpt.subscription.application.equity.querystack.UserEquityDTO;
-import com.miraclekang.chatgpt.subscription.application.subscription.command.NewSubscriptionCommand;
-import com.miraclekang.chatgpt.subscription.application.subscription.querystack.SubscriptionDTO;
 import com.miraclekang.chatgpt.common.model.IdentityGenerator;
 import com.miraclekang.chatgpt.common.reactive.Requester;
 import com.miraclekang.chatgpt.common.repo.SearchCriteria;
 import com.miraclekang.chatgpt.common.repo.SearchSpecification;
+import com.miraclekang.chatgpt.subscription.application.equity.command.GrantToUserCommand;
+import com.miraclekang.chatgpt.subscription.application.equity.querystack.UserEquityDTO;
+import com.miraclekang.chatgpt.subscription.application.subscription.command.NewSubscriptionCommand;
+import com.miraclekang.chatgpt.subscription.application.subscription.querystack.SubscriptionDTO;
 import com.miraclekang.chatgpt.subscription.domain.model.equity.EquityGrantService;
 import com.miraclekang.chatgpt.subscription.domain.model.equity.UserEquity;
 import com.miraclekang.chatgpt.subscription.domain.model.equity.UserEquityRepository;
@@ -138,12 +138,12 @@ public class SubscriptionService {
     public Mono<UserEquityDTO> grantSubscriptionToUser(String aSubscriptionId, GrantToUserCommand command) {
         SubscriptionId subscriptionId = new SubscriptionId(aSubscriptionId);
         return Requester.currentRequester()
-                .flatMap(requester -> Mono.just(subscriptionId)
+                .flatMap(requester -> Mono.just(new UserId(command.getUserId()))
                         .publishOn(Schedulers.boundedElastic())
-                        .mapNotNull(subscriptionRepository::findBySubscriptionId)
-                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Subscription not found")))
-                        .filter(subscription -> userInfoService.existsByUserId(new UserId(command.getUserId())))
+                        .flatMap(userInfoService::existsByUserId).filter(exists -> exists)
                         .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found")))
+                        .mapNotNull($ -> subscriptionRepository.findBySubscriptionId(subscriptionId))
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Subscription not found")))
                         .map(subscription -> {
                             UserEquity userEquity = equityGrantService.grantToUser(requester,
                                     subscription,

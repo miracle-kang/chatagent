@@ -13,6 +13,7 @@ spring:
         git:
           uri: https://github.com/miracle-kang/chatgpt
           searchPaths: .springconfig
+          default-label: main
     refresh:
       enabled: false
 

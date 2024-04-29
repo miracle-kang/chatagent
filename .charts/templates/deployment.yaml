@@ -294,7 +294,6 @@ spec:
             {{- if .Values.configserver.enabled }}
             - "--spring.cloud.config.enabled=true"
             - "--spring.cloud.config.uri={{ $configServerUrl }}"
-            - "--spring.config.import=configserver:{{ $configServerUrl }}"
             {{- end }}
             {{- if .Values.subscription.enabled }}
             - "--remote.subscription.url=http://{{ include "helm.subscription.name" . }}:{{ default .Values.service.port .Values.subscription.service.port }}"
@@ -427,7 +426,6 @@ spec:
             {{- if .Values.configserver.enabled }}
             - "--spring.cloud.config.enabled=true"
             - "--spring.cloud.config.uri={{ $configServerUrl }}"
-            - "--spring.config.import=configserver:{{ $configServerUrl }}"
             {{- end }}
             {{- if .Values.identity.enabled }}
             - "--remote.identity.url=http://{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}"
@@ -560,7 +558,6 @@ spec:
             {{- if .Values.configserver.enabled }}
             - "--spring.cloud.config.enabled=true"
             - "--spring.cloud.config.uri={{ $configServerUrl }}"
-            - "--spring.config.import=configserver:{{ $configServerUrl }}"
             {{- end }}
             {{- if .Values.identity.enabled }}
             - "--remote.identity.url=http://{{ include "helm.identity.name" . }}:{{ default .Values.service.port .Values.identity.service.port }}"

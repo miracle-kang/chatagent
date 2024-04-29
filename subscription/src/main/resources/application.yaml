@@ -3,24 +3,6 @@ server:
   forward-headers-strategy: framework
 
 spring:
-  application:
-    name: chatgpt-subscription
-  main:
-    allow-bean-definition-overriding: true
-
-  # Datasource
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:file:~/.chatgpt/subscription
-    username: root
-    password: root
-
-  # Spring Cloud Config
-  cloud:
-    config:
-      enabled: false
-      uri: http://localhost:8888
-      allow-override: true
 
   # Spring Data JPA
   jpa:
@@ -43,27 +25,6 @@ spring:
 
   messages:
     basename: i18n/messages
-
-# Actuator
-management:
-  endpoint:
-    prometheus:
-      enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: info,health,prometheus
-      cors:
-        allowed-origin-patterns: '*'
-        allow-credentials: true
-        allowed-headers: '*'
-        allowed-methods: '*'
-        max-age: 3600
-        allowed-origins:
-          - '127.0.0.1'
-  health:
-    db:
-      enabled: true
 
 # Spring Doc
 springdoc:
@@ -92,17 +53,11 @@ auth:
 # Logging
 logging:
   level:
-    com.trddao: debug
+    web: debug
+    com.miraclekang: debug
     org.flywaydb: debug
     org.springframework.cloud.config: debug
 
 snowflake:
   enable: true
   node-id: 100
-
-# Redis
-redis:
-  enabled: false
-  address: redis://localhost:6379
-  database: 0
-  password: 123456

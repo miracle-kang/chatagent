@@ -3,24 +3,6 @@ server:
   forward-headers-strategy: framework
 
 spring:
-  application:
-    name: chatgpt-identity
-  main:
-    allow-bean-definition-overriding: true
-
-  # Spring Cloud Config
-  cloud:
-    config:
-      enabled: false
-      uri: http://localhost:8888
-      allow-override: true
-
-  # Datasource
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:file:~/.chatgpt/identity
-    username: root
-    password: root
 
   # Spring Data JPA
   jpa:
@@ -48,34 +30,6 @@ spring:
   freemarker:
     suffix: .ftl
 
-  # Security
-  security:
-    oauth2:
-      client:
-        registration:
-          github:
-            client-id: github-client-id
-            client-secret: github-client-secret
-            redirect-uri: "{baseUrl}/api/open/oauth2/login/{registrationId}"
-          google:
-            client-id: google-client-id
-            client-secret: google-client-secret
-            redirect-uri: "{baseUrl}/api/open/oauth2/login/{registrationId}"
-
-  # Mail Server
-  mail:
-    sender: "no-reply@miraclekang.com"
-    host: smtp.sendgrid.net
-    port: 587
-    username: apikey
-    password: apipassword
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
 # Spring Doc
 springdoc:
   api-docs:
@@ -94,31 +48,10 @@ springdoc:
       paths-to-match:
         - /actuator/**
 
-# Actuator
-management:
-  endpoint:
-    prometheus:
-      enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: info,health,prometheus
-      cors:
-        allowed-origin-patterns: '*'
-        allow-credentials: true
-        allowed-headers: '*'
-        allowed-methods: '*'
-        max-age: 3600
-        allowed-origins:
-          - '127.0.0.1'
-  health:
-    db:
-      enabled: true
-
 # Logging
 logging:
   level:
-    com.trddao: debug
+    com.miraclekang: debug
     org.flywaydb: debug
     org.springframework.cloud.config: debug
 
@@ -138,16 +71,9 @@ auth:
     auto-init: true
     phones: RootPhones
   jwt:
-    issuer: miraclekang
+    issuer: miraclekang.com
     expires-hours: 48
     key: fa6Y!#2zYfdnzD#Z@USNFlQIgMROqR6aNnPeHy%Yw$9eCtOnjt
-
-# Redis
-redis:
-  enabled: false
-  address: redis://localhost:6379
-  database: 0
-  password: 123456
 
 file:
   storage: directory

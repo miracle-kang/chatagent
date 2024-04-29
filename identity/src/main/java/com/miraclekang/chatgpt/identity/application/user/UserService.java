@@ -38,7 +38,7 @@ public class UserService {
                 .switchIfEmpty(Mono.error(new IllegalStateException("Requester is not authenticated")))
                 .flatMap(requester -> blockingOperation(() -> userRepository.findByUserId(new UserId(requester.getUserId())))
                         .switchIfEmpty(Mono.error(new IllegalStateException("User not exists.")))
-                        .map(user -> PublicUserInfoDTO.from(user.userInfo(), registrationRepository, equityInfoService)));
+                        .flatMap(user -> PublicUserInfoDTO.from(user.userInfo(), registrationRepository, equityInfoService)));
     }
 
     public Mono<UserProfileDTO> currentUserProfile() {

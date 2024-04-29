@@ -3,13 +3,14 @@ package com.miraclekang.chatgpt.common.config;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.RequestInterceptor;
-import feign.RequestTemplate;
+import com.miraclekang.chatgpt.common.facade.ReactiveAdapterInterceptor;
+import feign.Logger;
 import feign.codec.DecodeException;
 import feign.codec.Decoder;
 import feign.optionals.OptionalDecoder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
@@ -23,15 +24,20 @@ import java.lang.reflect.ParameterizedType;
 @Slf4j
 @Configuration
 @EnableFeignClients(basePackages = "com.miraclekang.chatgpt.common.facade")
-public class FeignConfiguration implements RequestInterceptor {
+public class FeignConfiguration {
 
     public FeignConfiguration() {
         log.info("FeignConfiguration init");
     }
 
-    @Override
-    public void apply(RequestTemplate template) {
+    @Bean
+    public ReactiveAdapterInterceptor reactiveAdapterInterceptor() {
+        return new ReactiveAdapterInterceptor();
+    }
 
+    @Bean
+    public Logger.Level feignLoggerLevel(@Value("${feign.logging.level:NONE}") Logger.Level loggingLevel) {
+        return loggingLevel;
     }
 
     @Bean

@@ -1,5 +1,3 @@
-version: "3.8"
-
 volumes:
   mysql:
 
@@ -8,14 +6,14 @@ networks:
 
 x-common-environments: &common-environments
   TZ: Asia/Shanghai
-  JWT_SECRET: Pdd3HWPJzzcxmNhGV5D8ts4BPP7BNg2YfCVGjRZqim8eTUqi3M
+  JWT_SECRET: ${JWT_SECRET}
 
 x-mysql-environments: &mysql-environments
-  MYSQL_USER: root
-  MYSQL_PASSWORD: QO2NqquXIldIJWmt0rpCDsY30Qy1MwAJ
+  MYSQL_USER: ${MYSQL_USER}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD}
 
 x-redis-environments: &redis-environments
-  REDIS_PASSWORD: 123456
+  REDIS_PASSWORD: ${REDIS_PASSWORD}
 
 services:
   mysql:
@@ -26,8 +24,8 @@ services:
     networks:
       - chatgpt-network
     environment:
-      <<: *common-environments
-      MYSQL_ROOT_PASSWORD: QO2NqquXIldIJWmt0rpCDsY30Qy1MwAJ
+      <<: [ *common-environments ]
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "13306:3306"
 
@@ -37,10 +35,19 @@ services:
     networks:
       - chatgpt-network
     environment:
-      <<: *common-environments
-      <<: *redis-environments
+      <<: [ *common-environments, *redis-environments ]
     ports:
       - "6379:6379"
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    restart: always
+    networks:
+      - chatgpt-network
+    environment:
+      <<: [ *common-environments ]
+    ports:
+      - "9411:9411"
 
   configserver:
     build:
@@ -53,7 +60,7 @@ services:
     networks:
       - chatgpt-network
     environment:
-      <<: *common-environments
+      <<: [ *common-environments ]
       JAVA_OPTS: "-Xms128m -Xmx512m"
     command:
       - "--spring.cloud.config.server.git.uri=https://github.com/miracle-kang/chatgpt"
@@ -73,26 +80,25 @@ services:
     networks:
       - chatgpt-network
     environment:
-      <<: *common-environments
-      <<: *mysql-environments
-      <<: *redis-environments
+      <<: [ *common-environments, *mysql-environments, *redis-environments ]
       MYSQL_URL: "mysql://mysql:3306"
       MYSQL_DATABASE: chatgpt-identity
       REDIS_ADDRESS: "redis://redis:6379"
       REDIS_DATABASE: 0
       JAVA_OPTS: "-Xms128m -Xmx512m"
-    ports:
-      - "8080:8080"
     command:
       - "--auth.root.auto-init=true"
-      - "--auth.root.phones={RootPhones}"
+      - "--auth.root.phones=${ROOT_PHONES}"
       - "--auth.allow-mock=true"
-      - "--third-party.dingtalk.token={DINGTALK_TOKEN}"
-      - "--third-party.dingtalk.secret={DINGTALK_SECRET}"
-      - "--spring.cloud.config.enabled=true"
+      - "--third-party.dingtalk.token=${DINGTALK_TOKEN}"
+      - "--third-party.dingtalk.secret=${DINGTALK_SECRET}"
+      - "--spring.cloud.config.enabled=false"
       - "--spring.cloud.config.uri=http://configserver:8888"
       - "--remote.assistant.url=http://assistant:8080"
       - "--remote.subscription.url=http://subscription:8080"
+      - "--zipkin.base-url=http://zipkin:9411"
+      - "--logging.level.web=debug"
+      - "--feign.logging.level=HEADERS"
 
   subscription:
     build:
@@ -109,21 +115,20 @@ services:
     networks:
       - chatgpt-network
     environment:
-      <<: *common-environments
-      <<: *mysql-environments
-      <<: *redis-environments
+      <<: [ *common-environments, *mysql-environments, *redis-environments ]
       MYSQL_URL: "mysql://mysql:3306"
       MYSQL_DATABASE: chatgpt-subscription
       REDIS_ADDRESS: "redis://redis:6379"
       REDIS_DATABASE: 1
       JAVA_OPTS: "-Xms128m -Xmx512m"
-    ports:
-      - "8081:8080"
     command:
-      - "--spring.cloud.config.enabled=true"
+      - "--spring.cloud.config.enabled=false"
       - "--spring.cloud.config.uri=http://configserver:8888"
       - "--remote.identity.url=http://identity:8080"
       - "--remote.assistant.url=http://assistant:8080"
+      - "--zipkin.base-url=http://zipkin:9411"
+      - "--logging.level.web=debug"
+      - "--feign.logging.level=HEADERS"
 
   assistant:
     build:
@@ -140,20 +145,30 @@ services:
     networks:
       - chatgpt-network
     environment:
-      <<: *common-environments
-      <<: *mysql-environments
-      <<: *redis-environments
+      <<: [ *common-environments, *mysql-environments, *redis-environments ]
       MYSQL_URL: "mysql://mysql:3306"
       MYSQL_DATABASE: chatgpt-assistant
       REDIS_ADDRESS: "redis://redis:6379"
       REDIS_DATABASE: 2
       JAVA_OPTS: "-Xms128m -Xmx512m"
-    ports:
-      - "8082:8080"
     command:
-      - "--third-party.openai.token={OPENAI_TOKEN}"
+      - "--third-party.openai.token=${OPENAI_TOKEN}"
       - "--third-party.openai.proxy=none"
-      - "--spring.cloud.config.enabled=true"
+      - "--spring.cloud.config.enabled=false"
       - "--spring.cloud.config.uri=http://configserver:8888"
       - "--remote.identity.url=http://identity:8080"
       - "--remote.subscription.url=http://subscription:8080"
+      - "--zipkin.base-url=http://zipkin:9411"
+      - "--logging.level.web=debug"
+      - "--feign.logging.level=HEADERS"
+
+  gateway:
+    build:
+      dockerfile: Dockerfile
+      context: ./gateway
+    image: miracle/nginx-gateway:alpine
+    restart: always
+    networks:
+      - chatgpt-network
+    ports:
+      - "8080:8080"

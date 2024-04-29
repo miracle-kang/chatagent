@@ -1,12 +1,11 @@
 package com.miraclekang.chatgpt.assistant.domain.model.chat;
 
-import com.miraclekang.chatgpt.common.exception.DomainException;
 import com.miraclekang.chatgpt.assistant.domain.EnumExceptionCode;
 import com.miraclekang.chatgpt.assistant.domain.model.billing.Token;
 import com.miraclekang.chatgpt.assistant.domain.model.billing.TokenCharge;
 import com.miraclekang.chatgpt.assistant.domain.model.billing.TokenChargeService;
-import com.miraclekang.chatgpt.assistant.domain.model.equity.UserEquityChecker;
 import com.miraclekang.chatgpt.assistant.domain.model.equity.UserEquityCheckerProvider;
+import com.miraclekang.chatgpt.common.exception.DomainException;
 import com.miraclekang.chatgpt.common.reactive.Requester;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -55,33 +54,36 @@ public class ConversationMessageService {
                                                ConversationMessage sendingMessage) {
 
         MessageConfig messageConfig = conversation.messageConfig();
-        UserEquityChecker equityChecker = equityCheckerProvision.provision(requester, conversation.getModel());
 
-        return Mono.just(conversation.getConversationId())
+        return Mono.just(conversation.getModel())
                 .publishOn(Schedulers.boundedElastic())
-                .filter(messages -> equityChecker.allowUseModel(conversation.getModel()))
+                .flatMap(model -> equityCheckerProvision.provision(requester, model))
+                .filter(equityChecker -> equityChecker.allowUseModel(conversation.getModel()))
                 .switchIfEmpty(Mono.error(new DomainException("Not allowed to use model " + conversation.getModel(),
                         EnumExceptionCode.Forbidden)))
-                .map(conversationId -> {
+                .map(equityChecker -> {
                     List<Message> historyMessages = List.of();
                     if (BooleanUtils.isNotFalse(conversation.getSendHistory())) {
-                        historyMessages = messageRepository.tail(conversationId, 20, MessageStatus.Succeeded)
+                        historyMessages = messageRepository.tail(conversation.getConversationId(), 20, MessageStatus.Succeeded)
                                 .stream().map(ConversationMessage::getMessage).toList();
                     }
-                    return Stream.concat(historyMessages.stream(), Stream.of(sendingMessage.getMessage()))
+                    List<Message> messages = ensureMessageMaxTokens(
+                            conversation.getName(),
+                            messageConfig.getSystemMessage(),
+                            Stream.concat(historyMessages.stream(), Stream.of(sendingMessage.getMessage())).toList(),
+                            messageConfig.getModel(),
+                            equityChecker.allowedMaxToken(messageConfig.getModel(), messageConfig.getMaxTokens()));
+
+                    List<Token> tokens = messages.stream()
+                            .map(message -> message.encodeToken(messageConfig.getModel()))
                             .toList();
+
+                    // Check if the requester could use token
+                    if (equityChecker.couldUseToken(messageConfig.getModel(), tokens)) {
+                        return messages;
+                    }
+                    return List.<Message>of();
                 })
-                // Ensure message max tokens
-                .map(messages -> ensureMessageMaxTokens(
-                        conversation.getName(),
-                        messageConfig.getSystemMessage(),
-                        messages,
-                        messageConfig.getModel(),
-                        equityChecker.allowedMaxToken(messageConfig.getModel(), messageConfig.getMaxTokens())))
-                // Check if the requester could use token
-                .filter(messages -> equityChecker.couldUseToken(messageConfig.getModel(), messages.stream()
-                        .map(message -> message.encodeToken(messageConfig.getModel()))
-                        .toList()))
                 .switchIfEmpty(Mono.error(new DomainException("Not enough token", EnumExceptionCode.Forbidden)))
                 .flatMapMany(messages -> {
                     List<Message> replyMessages = new ArrayList<>();
@@ -89,8 +91,9 @@ public class ConversationMessageService {
                             .publishOn(Schedulers.boundedElastic())
                             .doFirst(() -> {
                                 TokenCharge charge = chargeService.chargeTokens(requester, conversation.getModel(),
-                                        messages.stream().map(msg -> msg.encodeToken(conversation.getModel()))
-                                                .toList());
+                                                messages.stream().map(msg -> msg.encodeToken(conversation.getModel()))
+                                                        .toList())
+                                        .block();
                                 log.debug(">>>>>> Chat message start, sent messages {}, charged token {}",
                                         messages.size(), charge.getTokens());
                                 // Context size = messages - systemMessage - sendingMessage
@@ -104,8 +107,13 @@ public class ConversationMessageService {
                             .doOnError(err -> {
                                 log.error("Error on sent message", err);
                                 if (!replyMessages.isEmpty()) {
-                                    chargeService.chargeToken(requester, conversation.getModel(),
-                                            Message.ofAssistant(replyMessages).encodeToken(conversation.getModel()));
+                                    TokenCharge charge = chargeService.chargeToken(requester, conversation.getModel(),
+                                                    Message.ofAssistant(replyMessages).encodeToken(conversation.getModel()))
+                                            .block();
+
+                                    var replyConversationMsg = conversation.newMessage(Message.ofAssistant(replyMessages));
+                                    replyConversationMsg.partialSuccess(messages.size() - 1, charge.getTokens());
+                                    messageRepository.save(replyConversationMsg);
                                 }
                             })
                             .doOnComplete(() -> {
@@ -115,7 +123,8 @@ public class ConversationMessageService {
                                 }
                                 var replyMessage = Message.ofAssistant(replyMessages);
                                 TokenCharge charge = chargeService.chargeToken(requester, conversation.getModel(),
-                                        replyMessage.encodeToken(conversation.getModel()));
+                                                replyMessage.encodeToken(conversation.getModel()))
+                                        .block();
 
                                 var replyConversationMsg = conversation.newMessage(replyMessage);
                                 replyConversationMsg.success(messages.size() - 1, charge.getTokens());

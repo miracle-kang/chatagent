@@ -6,10 +6,10 @@ import com.miraclekang.chatgpt.assistant.application.chat.querystack.Conversatio
 import com.miraclekang.chatgpt.assistant.application.chat.querystack.ConversationDTO;
 import com.miraclekang.chatgpt.assistant.application.chat.querystack.MessageDTO;
 import com.miraclekang.chatgpt.assistant.application.chat.querystack.MessagePartialDTO;
-import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
-import com.miraclekang.chatgpt.common.reactive.Requester;
 import com.miraclekang.chatgpt.assistant.domain.model.chat.*;
 import com.miraclekang.chatgpt.assistant.domain.model.equity.UserEquityCheckerProvider;
+import com.miraclekang.chatgpt.assistant.domain.model.identity.UserId;
+import com.miraclekang.chatgpt.common.reactive.Requester;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -52,7 +52,7 @@ public class ChatService {
     @Transactional
     public Mono<ConversationDTO> newConversation(NewConversationCommand command) {
         return Requester.currentRequester().publishOn(Schedulers.boundedElastic())
-                .map(requester -> conversationProvisionService.provisionConversation(
+                .flatMap(requester -> conversationProvisionService.provisionConversation(
                         requester,
                         command.getName(),
                         command.getModel(),
@@ -71,17 +71,20 @@ public class ChatService {
                         .map(conversationId -> conversationRepository.findByConversationIdAndOwnerUserId(
                                 conversationId, new UserId(requester.getUserId())))
                         .switchIfEmpty(Mono.error(new IllegalArgumentException("Conversation not exists")))
-                        .map(conversation -> {
-                            conversation.update(
-                                    command.getName(),
-                                    command.getModel(),
-                                    command.getSendHistory(),
-                                    command.getTemperature(),
-                                    command.getTopP(),
-                                    command.getMaxTokens(),
-                                    equityCheckerProvider.provision(requester, command.getModel()));
-                            return ConversationDTO.of(conversationRepository.save(conversation));
-                        }));
+                        .flatMap(conversation -> equityCheckerProvider.provision(requester, command.getModel())
+                                .flatMap(checker -> {
+                                    conversation.update(
+                                            command.getName(),
+                                            command.getModel(),
+                                            command.getSendHistory(),
+                                            command.getTemperature(),
+                                            command.getTopP(),
+                                            command.getMaxTokens(),
+                                            checker
+                                    );
+                                    return blockingOperation(() -> conversationRepository.save(conversation));
+                                })
+                        ).map(ConversationDTO::of));
     }
 
     public Mono<ConversationDTO> getConversation(String aConversationId) {

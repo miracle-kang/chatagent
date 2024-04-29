@@ -8,8 +8,11 @@ import com.miraclekang.chatgpt.identity.domain.model.identity.user.UserRegistrat
 import com.miraclekang.chatgpt.identity.domain.model.identity.user.UserType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+
+import static com.miraclekang.chatgpt.common.reactive.ReactiveUtils.blockingOperation;
 
 @Data
 public class PublicUserInfoDTO {
@@ -48,28 +51,39 @@ public class PublicUserInfoDTO {
         this.equities = equities;
     }
 
-    public static PublicUserInfoDTO from(UserInfo userInfo) {
+    public static Mono<PublicUserInfoDTO> from(UserInfo userInfo) {
         return from(userInfo, null, null);
     }
 
-    public static PublicUserInfoDTO from(UserInfo userInfo, UserRegistrationRepository registrationRepository,
-                                         UserEquityInfoService equityInfoService) {
-        List<UserRegistration> userRegistrations = List.of();
-        List<UserEquityInfo> userEquityInfos = List.of();
-        if (registrationRepository != null)
-            userRegistrations = registrationRepository.findByUserId(userInfo.getUserId());
-        if (equityInfoService != null)
-            userEquityInfos = equityInfoService.userEquities(userInfo.getUserId());
+    public static Mono<PublicUserInfoDTO> from(UserInfo userInfo, UserRegistrationRepository registrationRepository,
+                                               UserEquityInfoService equityInfoService) {
 
-        return new PublicUserInfoDTO(
-                userInfo.getUserId().getId(),
-                userInfo.getUsername().getUsername(),
-                userInfo.getEmail() == null ? null : userInfo.getEmail().getAddress(),
-                userInfo.getPhone() == null ? null : userInfo.getPhone().fullProtectedNumber(),
-                userInfo.getRole(),
-                UserProfileDTO.from(userInfo.getProfile()),
-                userRegistrations.stream().map(UserRegistrationDTO::from).toList(),
-                userEquityInfos.stream().map(UserEquityInfoDTO::from).toList()
-        );
+        return Mono.just(userInfo.getUserId())
+                .flatMap(userId -> {
+                    Mono<List<UserRegistration>> userRegistrations;
+                    if (registrationRepository != null) {
+                        userRegistrations = blockingOperation(() -> registrationRepository.findByUserId(userId));
+                    } else {
+                        userRegistrations = Mono.just(List.of());
+                    }
+
+                    Mono<List<UserEquityInfo>> userEquityInfos;
+                    if (equityInfoService != null) {
+                        userEquityInfos = equityInfoService.userEquities(userId).collectList();
+                    } else {
+                        userEquityInfos = Mono.just(List.of());
+                    }
+                    return Mono.zip(userRegistrations, userEquityInfos);
+                })
+                .map(tuple -> new PublicUserInfoDTO(
+                        userInfo.getUserId().getId(),
+                        userInfo.getUsername().getUsername(),
+                        userInfo.getEmail() == null ? null : userInfo.getEmail().getAddress(),
+                        userInfo.getPhone() == null ? null : userInfo.getPhone().fullProtectedNumber(),
+                        userInfo.getRole(),
+                        UserProfileDTO.from(userInfo.getProfile()),
+                        tuple.getT1().stream().map(UserRegistrationDTO::from).toList(),
+                        tuple.getT2().stream().map(UserEquityInfoDTO::from).toList()
+                ));
     }
 }
