@@ -1,6 +1,6 @@
-# ChatGPT Assistant
+# ChatGPT Agent
 
-ChatGPT Assistant
+ChatGPT Agent
 
 ## Features
 
@@ -57,8 +57,9 @@ Subscription & Order service
 
 ### agent
 
-ChatGPT Assistant service
+ChatGPT Agent service
 
+- Spring AI
 - OpenAI API support
 - ChatGPT conversation
 - Token Account & Charge management
@@ -120,6 +121,7 @@ Refer to [build-dev-image.yml](.github%2Fworkflows%2Fbuild-dev-image.yml) (for d
 and [build-tags.yml](.github%2Fworkflows%2Fbuild-tags.yml) (for release)
 
 Build helm chart, replace the variables with your own
+
 ```shell
 # Replace chart name and image repository
 sed -i "s/__REPLACE_CHART_NAME__/${CHART_NAME}/g" ./.charts/Chart.yaml
@@ -135,8 +137,9 @@ helm cm-push ./.charts ${HELM_REPO}
 helm cm-push ./.charts ${HELM_REPO} --version ${VERSION} --app-version ${APP_VERSION}
 ```
 
-Customize your helm [values.yaml](.charts/values.yaml) if needed. 
+Customize your helm [values.yaml](.charts/values.yaml) if needed.
 And then install helm chart to k8s, replace the variables with your own
+
 ```shell
 # Add custom helm repo if needed
 helm repo add ${HELM_REPO} ${HELM_REPO_URL} --username ${HELM_REPO_USERNAME} --password ${HELM_REPO_PASSWORD}

@@ -63,7 +63,7 @@ services:
       <<: [ *common-environments ]
       JAVA_OPTS: "-Xms128m -Xmx512m"
     command:
-      - "--spring.cloud.config.server.git.uri=https://github.com/miracle-kang/chatgpt"
+      - "--spring.cloud.config.server.git.uri=https://github.com/miracle-kang/chatagent"
       - "--spring.cloud.config.server.git.searchPath=.springconfig"
 
   identity:
