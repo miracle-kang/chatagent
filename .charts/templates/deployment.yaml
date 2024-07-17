@@ -64,12 +64,12 @@ spec:
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-password
             {{- end }}
             {{- if .Values.redis.address }}
@@ -80,14 +80,14 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: redis-password
             {{- end }}
             {{- if .Values.auth.jwtSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: jwt-secret
             {{- end }}
             {{- if .Values.configserver.git.username }}
