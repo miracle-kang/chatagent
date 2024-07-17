@@ -43,14 +43,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           resources:
@@ -90,16 +90,16 @@ spec:
                   name: {{ include "helm.fullname" . }}-auth
                   key: jwt-secret
             {{- end }}
-            {{- if .Values.configserver.git }}
+            {{- if .Values.configserver.git.username }}
             - name: GIT_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: configserver-git-username
             - name: GIT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: configserver-git-password
 
             {{- end}}
@@ -182,14 +182,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           resources:
@@ -208,12 +208,12 @@ spec:
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-password
             {{- end }}
             {{- if .Values.redis.address }}
@@ -224,47 +224,47 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: redis-password
             {{- end }}
             {{- if .Values.thirdParty.dingtalk.token }}
             - name: DINGTALK_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: dingtalk-token
             {{- end }}
             {{- if .Values.thirdParty.dingtalk.secret }}
             - name: DINGTALK_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: dingtalk-secret
             {{- end }}
             {{- if .Values.thirdParty.openai.token }}
             - name: OPENAI_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: openai-token
             {{- end }}
             {{- if .Values.mailServer.host }}
             - name: MAILSERVER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mailServer-username
             - name: MAILSERVER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mailServer-password
             {{ end }}
             {{- if .Values.auth.jwtSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: jwt-secret
             {{- end }}
             # Extends environment variables
@@ -363,14 +363,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           resources:
@@ -384,12 +384,12 @@ spec:
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-password
             {{- end }}
             {{- if .Values.redis.address }}
@@ -400,14 +400,14 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: redis-password
             {{- end }}
             {{- if .Values.auth.jwtSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: jwt-secret
             {{- end }}
             # Extends environment variables
@@ -495,14 +495,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: http
-            initialDelaySeconds: 60
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             timeoutSeconds: 10
             failureThreshold: 5
           resources:
@@ -516,12 +516,12 @@ spec:
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: mysql-password
             {{- end }}
             {{- if .Values.redis.address }}
@@ -532,14 +532,14 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: redis-password
             {{- end }}
             {{- if .Values.auth.jwtSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "helm.fullname" . }}-auth
+                  name: {{ include "helm.fullname" . }}-secret
                   key: jwt-secret
             {{- end }}
             # Extends environment variables
