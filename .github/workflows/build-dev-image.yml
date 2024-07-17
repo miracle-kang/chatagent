@@ -19,7 +19,7 @@ on:
 env:
   IMAGE_REPO: ghcr.io/miracle-kang/chatgpt
   HELM_REPO: miracle
-  CHART_NAME: chatgpt
+  CHART_NAME: chatagent
 
 permissions: write-all
 
